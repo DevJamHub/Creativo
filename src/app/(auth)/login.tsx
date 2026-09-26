@@ -1,202 +1,119 @@
 // Login screen with email/password and social auth options.
 
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
+import { AuthScreen } from '@/components/auth/AuthScreen';
+import { ErrorBanner } from '@/components/auth/ErrorBanner';
+import { focusRing } from '@/components/auth/focus';
 import { OrDivider } from '@/components/auth/OrDivider';
-import { SocialButton } from '@/components/auth/SocialButton';
+import { SocialButtons } from '@/components/auth/SocialButtons';
+import { SubmitButton } from '@/components/auth/SubmitButton';
 import { AppText } from '@/components/ui/AppText';
 import { useAuthContext } from '@/store/AuthProvider';
-import { colors, radius, spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
+import { emailError } from '@/utils/validation';
 
 export default function LoginScreen() {
-  const insets = useSafeAreaInsets();
-  const { signInWithEmail, signInWithGoogle, signInWithApple, resetPassword, loading, error, clearError } =
-    useAuthContext();
+  const { signInWithEmail, pending } = useAuthContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [error, setError] = useState<string | null>(null);
 
-  function validate(): boolean {
-    const errs: typeof fieldErrors = {};
-    if (!email.trim()) errs.email = 'Email is required.';
-    else if (!/\S+@\S+\.\S+/.test(email)) errs.email = 'Please enter a valid email address.';
-    if (!password) errs.password = 'Password is required.';
+  function validate() {
+    const errs = { email: emailError(email), password: password ? undefined : 'Password is required.' };
     setFieldErrors(errs);
-    return Object.keys(errs).length === 0;
+    return !errs.email && !errs.password;
   }
 
   async function handleLogin() {
-    clearError();
+    setError(null);
     if (!validate()) return;
-    await signInWithEmail(email.trim(), password);
-  }
-
-  function handleForgotPassword() {
-    router.push('/(auth)/forgot-password');
+    // On success the auth listener flips the session and the router leaves the auth stack
+    const result = await signInWithEmail(email.trim(), password);
+    if (result?.error) setError(result.error);
   }
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xxl }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        {/* Back */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </Pressable>
+    <AuthScreen title="Welcome Back" subtitle="Log in to continue to Creativo.">
+      <SocialButtons onError={setError} />
 
-        {/* Header */}
-        <View style={styles.header}>
-          <AppText variant="h1" color={colors.ink}>
-            Welcome Back
-          </AppText>
-          <AppText variant="body" color={colors.textMuted} style={styles.subtitle}>
-            Log in to continue to Creativo.
-          </AppText>
-        </View>
+      <OrDivider />
 
-        {/* Social */}
-        <View style={styles.social}>
-          <SocialButton provider="google" onPress={signInWithGoogle} loading={loading} />
-          <SocialButton provider="apple" onPress={signInWithApple} loading={loading} />
-        </View>
+      <View style={styles.form}>
+        <AuthInput
+          label="Email"
+          placeholder="Enter your email"
+          keyboardType="email-address"
+          autoComplete="email"
+          textContentType="emailAddress"
+          returnKeyType="next"
+          value={email}
+          onChangeText={(t) => {
+            setEmail(t);
+            if (fieldErrors.email) setFieldErrors((e) => ({ ...e, email: undefined }));
+          }}
+          error={fieldErrors.email}
+        />
+        <AuthInput
+          label="Password"
+          placeholder="Enter your password"
+          secureTextEntry
+          autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={handleLogin}
+          value={password}
+          onChangeText={(t) => {
+            setPassword(t);
+            if (fieldErrors.password) setFieldErrors((e) => ({ ...e, password: undefined }));
+          }}
+          error={fieldErrors.password}
+        />
 
-        <OrDivider />
+        <ErrorBanner message={error} />
 
-        {/* Email form */}
-        <View style={styles.form}>
-          <AuthInput
-            label="Email"
-            placeholder="Enter your email"
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
-            value={email}
-            onChangeText={(t) => {
-              setEmail(t);
-              if (fieldErrors.email) setFieldErrors((e) => ({ ...e, email: undefined }));
-            }}
-            error={fieldErrors.email}
-          />
-          <AuthInput
-            label="Password"
-            placeholder="Enter your password"
-            secureTextEntry
-            autoComplete="password"
-            textContentType="password"
-            value={password}
-            onChangeText={(t) => {
-              setPassword(t);
-              if (fieldErrors.password) setFieldErrors((e) => ({ ...e, password: undefined }));
-            }}
-            error={fieldErrors.password}
-          />
+        <SubmitButton
+          label="Log In"
+          loadingLabel="Signing in..."
+          loading={pending === 'email'}
+          disabled={pending !== null}
+          onPress={handleLogin}
+        />
 
-          {/* Error banner */}
-          {error ? (
-            <View style={styles.errorBanner}>
-              <Ionicons name="alert-circle" size={18} color={colors.danger} />
-              <AppText variant="caption" color={colors.danger} style={styles.errorText}>
-                {error}
-              </AppText>
-            </View>
-          ) : null}
-
-          {/* Login button */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Log In"
-            onPress={handleLogin}
-            disabled={loading}
-            style={({ pressed }) => [styles.loginBtn, pressed && styles.loginBtnPressed, loading && styles.loginBtnDisabled]}>
-            {loading ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <AppText variant="bodyStrong" color={colors.white}>
-                Log In
-              </AppText>
-            )}
-          </Pressable>
-
-          {/* Forgot password */}
-          <Pressable
-            accessibilityRole="link"
-            onPress={handleForgotPassword}
-            hitSlop={8}
-            style={styles.forgotBtn}>
-            <AppText variant="caption" color={colors.primary}>
-              Forgot password?
-            </AppText>
-          </Pressable>
-        </View>
-
-        {/* Sign up link */}
-        <View style={styles.footer}>
-          <AppText variant="body" color={colors.textMuted}>
-            Don't have an account?{' '}
-          </AppText>
-          <Link href="/signup" asChild>
-            <Pressable accessibilityRole="link" hitSlop={8}>
-              <AppText variant="bodyStrong" color={colors.primary}>
-                Create Account
+        <View style={styles.forgot}>
+          <Link href="/forgot-password" asChild>
+            <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
+              <AppText variant="caption" color={colors.primary}>
+                Forgot password?
               </AppText>
             </Pressable>
           </Link>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+
+      <View style={styles.footer}>
+        <AppText variant="body" color={colors.textMuted}>
+          Don&apos;t have an account?{' '}
+        </AppText>
+        <Link href="/signup" replace asChild>
+          <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
+            <AppText variant="bodyStrong" color={colors.primary}>
+              Create Account
+            </AppText>
+          </Pressable>
+        </Link>
+      </View>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  scroll: { paddingHorizontal: spacing.xl, flexGrow: 1 },
-  back: { alignSelf: 'flex-start', padding: spacing.xs, marginBottom: spacing.sm },
-  header: { gap: spacing.xxs, marginBottom: spacing.xxl },
-  subtitle: { marginTop: spacing.xxs },
-  social: { gap: spacing.sm },
   form: { gap: spacing.md },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.dangerSoft,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
-  },
-  errorText: { flex: 1 },
-  loginBtn: {
-    height: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.xs,
-  },
-  loginBtnPressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
-  loginBtnDisabled: { opacity: 0.6 },
-  forgotBtn: { alignSelf: 'center', paddingVertical: spacing.xs },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xxl },
+  forgot: { alignSelf: 'center', paddingVertical: spacing.xs },
+  footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: spacing.xxl },
 });

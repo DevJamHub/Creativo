@@ -1,179 +1,91 @@
-// Authentication hook: listens to Supabase auth state and exposes
-// sign-in / sign-up / sign-out helpers with loading and error states.
+// Authentication hook: listens to Supabase auth state, loads the user's profile,
+// and wraps the auth service so only one auth action can run at a time.
 
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { AuthError, Session, User } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 
+import * as auth from '@/lib/auth';
+import type { AuthResult, OAuthProvider, Profile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
-/* ------------------------------------------------------------------ */
-/*  State                                                              */
-/* ------------------------------------------------------------------ */
-
-interface AuthState {
-  session: Session | null;
-  user: User | null;
-  loading: boolean;
-  initializing: boolean;
-  error: string | null;
-}
-
-type AuthAction =
-  | { type: 'INITIALIZING' }
-  | { type: 'SESSION_LOADED'; session: Session | null }
-  | { type: 'LOADING' }
-  | { type: 'ERROR'; error: string }
-  | { type: 'CLEAR_ERROR' };
-
-const initial: AuthState = {
-  session: null,
-  user: null,
-  loading: false,
-  initializing: true,
-  error: null,
-};
-
-function reducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case 'INITIALIZING':
-      return { ...state, initializing: true };
-    case 'SESSION_LOADED':
-      return {
-        ...state,
-        session: action.session,
-        user: action.session?.user ?? null,
-        initializing: false,
-        loading: false,
-        error: null,
-      };
-    case 'LOADING':
-      return { ...state, loading: true, error: null };
-    case 'ERROR':
-      return { ...state, loading: false, error: action.error };
-    case 'CLEAR_ERROR':
-      return { ...state, error: null };
-    default:
-      return state;
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/*  Error mapping                                                      */
-/* ------------------------------------------------------------------ */
-
-function friendlyError(err: AuthError | Error | unknown): string {
-  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
-
-  if (msg.includes('invalid login credentials') || msg.includes('invalid_grant'))
-    return 'Email or password is incorrect.';
-  if (msg.includes('user already registered') || msg.includes('already exists'))
-    return 'An account with this email already exists.';
-  if (msg.includes('email not confirmed'))
-    return 'Please verify your email before signing in.';
-  if (msg.includes('invalid email'))
-    return 'Please enter a valid email address.';
-  if (msg.includes('password') && msg.includes('at least'))
-    return 'Password must be at least 6 characters.';
-  if (msg.includes('network') || msg.includes('fetch'))
-    return 'Something went wrong. Please check your connection and try again.';
-
-  return 'Something went wrong. Please try again.';
-}
-
-/* ------------------------------------------------------------------ */
-/*  Hook                                                               */
-/* ------------------------------------------------------------------ */
+export type PendingAction = 'email' | OAuthProvider | 'reset' | 'signOut';
 
 export function useAuth() {
-  const [state, dispatch] = useReducer(reducer, initial);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loadedProfile, setLoadedProfile] = useState<{ userId: string; profile: Profile | null } | null>(null);
+  const [initializing, setInitializing] = useState(true);
+  const [pending, setPending] = useState<PendingAction | null>(null);
+  const pendingRef = useRef(false); // blocks double taps before the next render
 
-  // Listen for session changes
+  // Session: initial load + live updates
   useEffect(() => {
-    // Fetch the initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      dispatch({ type: 'SESSION_LOADED', session });
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .finally(() => setInitializing(false));
 
-    // Subscribe to future changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      dispatch({ type: 'SESSION_LOADED', session });
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+      setSession(next);
+      setInitializing(false);
     });
-
-    return () => subscription.unsubscribe();
+    return () => data.subscription.unsubscribe();
   }, []);
 
-  // --- Actions ---
+  // Profile: retrieve (or create) whenever a different user signs in
+  const user = session?.user ?? null;
+  const userId = user?.id;
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    auth.getOrCreateProfile(user).then((p) => active && setLoadedProfile({ userId: user.id, profile: p }));
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when the user changes, not on token refresh
+  }, [userId]);
+  // Never expose a previous user's profile after switching accounts or signing out
+  const profile = loadedProfile && loadedProfile.userId === userId ? loadedProfile.profile : null;
 
-  const signInWithEmail = useCallback(async (email: string, password: string) => {
-    dispatch({ type: 'LOADING' });
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) dispatch({ type: 'ERROR', error: friendlyError(error) });
-  }, []);
-
-  const signUpWithEmail = useCallback(async (email: string, password: string, fullName: string) => {
-    dispatch({ type: 'LOADING' });
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    if (error) dispatch({ type: 'ERROR', error: friendlyError(error) });
-  }, []);
-
-  const resetPassword = useCallback(async (email: string) => {
-    dispatch({ type: 'LOADING' });
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) {
-      dispatch({ type: 'ERROR', error: friendlyError(error) });
-      return false;
+  const run = useCallback(async <T extends AuthResult>(action: PendingAction, fn: () => Promise<T>) => {
+    if (pendingRef.current) return null;
+    pendingRef.current = true;
+    setPending(action);
+    try {
+      return await fn();
+    } finally {
+      pendingRef.current = false;
+      setPending(null);
     }
-    dispatch({ type: 'SESSION_LOADED', session: state.session }); // stop loading
-    return true;
-  }, [state.session]);
-
-  const signInWithGoogle = useCallback(async () => {
-    dispatch({ type: 'LOADING' });
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'creativo://' },
-    });
-    if (error) dispatch({ type: 'ERROR', error: friendlyError(error) });
   }, []);
 
-  const signInWithApple = useCallback(async () => {
-    dispatch({ type: 'LOADING' });
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: { redirectTo: 'creativo://' },
-    });
-    if (error) dispatch({ type: 'ERROR', error: friendlyError(error) });
-  }, []);
-
-  const signOut = useCallback(async () => {
-    dispatch({ type: 'LOADING' });
-    const { error } = await supabase.auth.signOut();
-    if (error) dispatch({ type: 'ERROR', error: friendlyError(error) });
-  }, []);
-
-  const clearError = useCallback(() => {
-    dispatch({ type: 'CLEAR_ERROR' });
-  }, []);
+  const signInWithEmail = useCallback(
+    (email: string, password: string) => run('email', () => auth.signInWithEmail(email, password)),
+    [run],
+  );
+  const signUpWithEmail = useCallback(
+    (email: string, password: string, fullName: string) =>
+      run('email', () => auth.signUpWithEmail(email, password, fullName)),
+    [run],
+  );
+  const signInWithOAuth = useCallback((provider: OAuthProvider) => run(provider, () => auth.signInWithOAuth(provider)), [run]);
+  const sendPasswordReset = useCallback((email: string) => run('reset', () => auth.sendPasswordReset(email)), [run]);
+  const signOut = useCallback(() => run('signOut', auth.signOut), [run]);
 
   return useMemo(
     () => ({
-      ...state,
-      isAuthenticated: !!state.session,
+      session,
+      user,
+      profile,
+      initializing,
+      pending,
+      isAuthenticated: !!session,
       signInWithEmail,
       signUpWithEmail,
-      signInWithGoogle,
-      signInWithApple,
-      resetPassword,
+      signInWithOAuth,
+      sendPasswordReset,
       signOut,
-      clearError,
     }),
-    [state, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithApple, resetPassword, signOut, clearError],
+    [session, user, profile, initializing, pending, signInWithEmail, signUpWithEmail, signInWithOAuth, sendPasswordReset, signOut],
   );
 }

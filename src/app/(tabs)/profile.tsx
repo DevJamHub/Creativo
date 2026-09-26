@@ -10,6 +10,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { useApp } from '@/store/AppProvider';
+import { useAuthContext } from '@/store/AuthProvider';
 import { colors, SCREEN_PADDING, spacing, TAB_BAR_SPACE } from '@/theme';
 import type { IconName } from '@/types';
 
@@ -27,6 +28,7 @@ function SettingRow({ icon, label, onPress, danger }: { icon: IconName; label: s
 
 export default function ProfileScreen() {
   const { state, resetOnboarding } = useApp();
+  const { user, signOut, pending } = useAuthContext();
 
   return (
     <ProfileView
@@ -56,6 +58,20 @@ export default function ProfileScreen() {
               }}
             />
           </Card>
+          <Card style={styles.card}>
+            {/* Signing out flips the auth guard, which sends the user back to Welcome */}
+            <SettingRow
+              icon="log-out-outline"
+              label={pending === 'signOut' ? 'Logging out...' : 'Log out'}
+              onPress={() => signOut()}
+              danger
+            />
+          </Card>
+          {user?.email ? (
+            <AppText variant="small" color={colors.textSubtle} align="center">
+              Signed in as {user.email}
+            </AppText>
+          ) : null}
           <AppText variant="small" color={colors.textSubtle} align="center">
             Creativo MVP · mock data only
           </AppText>

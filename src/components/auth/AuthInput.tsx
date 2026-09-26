@@ -25,9 +25,15 @@ export function AuthInput({ label, error, secureTextEntry, style, ...rest }: Aut
         <TextInput
           {...rest}
           secureTextEntry={hidden}
+          accessibilityLabel={label}
+          accessibilityHint={error}
+          aria-invalid={!!error}
           placeholderTextColor={colors.textSubtle}
           style={[styles.input, style]}
-          autoCapitalize={rest.autoCapitalize ?? (rest.keyboardType === 'email-address' ? 'none' : 'sentences')}
+          autoCapitalize={
+            rest.autoCapitalize ?? (isPassword || rest.keyboardType === 'email-address' ? 'none' : 'sentences')
+          }
+          autoCorrect={rest.autoCorrect ?? !(isPassword || rest.keyboardType === 'email-address')}
         />
         {isPassword && (
           <Pressable
@@ -40,7 +46,7 @@ export function AuthInput({ label, error, secureTextEntry, style, ...rest }: Aut
         )}
       </View>
       {error ? (
-        <AppText variant="small" color={colors.danger} style={styles.error}>
+        <AppText variant="small" color={colors.danger} style={styles.error} accessibilityLiveRegion="polite">
           {error}
         </AppText>
       ) : null}

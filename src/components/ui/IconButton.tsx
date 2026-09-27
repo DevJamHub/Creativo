@@ -1,9 +1,10 @@
-// Round icon-only button (back, share, QR, add...).
+// Round icon-only button (back, close, notifications, upload...).
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, shadows } from '@/theme';
+import { focusRing } from '@/components/auth/focus';
+import { colors } from '@/theme';
 import type { IconName } from '@/types';
 
 export interface IconButtonProps {
@@ -12,7 +13,10 @@ export interface IconButtonProps {
   size?: number;
   color?: string;
   background?: string;
+  /** Kept for older call sites; the dark theme always draws a hairline border instead of a shadow */
   elevated?: boolean;
+  /** Small lime dot, e.g. unread notifications */
+  dot?: boolean;
   accessibilityLabel: string;
   style?: StyleProp<ViewStyle>;
 }
@@ -24,6 +28,7 @@ export function IconButton({
   color = colors.text,
   background = colors.surface,
   elevated = true,
+  dot,
   accessibilityLabel,
   style,
 }: IconButtonProps) {
@@ -33,15 +38,16 @@ export function IconButton({
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       hitSlop={6}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.base,
         { width: size, height: size, borderRadius: size / 2, backgroundColor: background },
-        elevated && shadows.sm,
         elevated && styles.border,
-        pressed && { opacity: 0.7 },
+        state.pressed && { opacity: 0.7 },
+        focusRing(state),
         style,
       ]}>
       <Ionicons name={icon} size={size * 0.46} color={color} />
+      {dot && <View style={[styles.dot, { top: size * 0.22, right: size * 0.24 }]} />}
     </Pressable>
   );
 }
@@ -49,4 +55,13 @@ export function IconButton({
 const styles = StyleSheet.create({
   base: { alignItems: 'center', justifyContent: 'center' },
   border: { borderWidth: 1, borderColor: colors.border },
+  dot: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+    borderWidth: 1.5,
+    borderColor: colors.surface,
+  },
 });

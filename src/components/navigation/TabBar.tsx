@@ -1,36 +1,54 @@
-// Floating bottom tab bar: Home · Explore · Network · Repository · Profile.
+// Bottom tab bar: Home · Feed · [+] · Friends · Profile.
+// The middle "+" isn't a tab; it opens the upload screen as a modal.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { focusRing } from '@/components/auth/focus';
 import { AppText } from '@/components/ui/AppText';
-import { useNetwork } from '@/store/hooks';
-import { colors, radius, shadows, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 import type { IconName } from '@/types';
 
-// Icon + label for each tab route (file name in src/app/(tabs))
+// Tab routes (file names in src/app/(tabs)) in display order; UPLOAD marks where the "+" sits
+const UPLOAD = '__upload';
+const order = ['home', 'feed', UPLOAD, 'network', 'profile'];
+
 const tabs: Record<string, { label: string; icon: IconName; iconActive: IconName }> = {
-  home: { label: 'Home', icon: 'home-outline', iconActive: 'home' },
-  discover: { label: 'Explore', icon: 'compass-outline', iconActive: 'compass' },
-  network: { label: 'Network', icon: 'people-outline', iconActive: 'people' },
-  repository: { label: 'Repository', icon: 'folder-open-outline', iconActive: 'folder-open' },
+  home: { label: 'Home', icon: 'grid-outline', iconActive: 'grid' },
+  feed: { label: 'Feed', icon: 'images-outline', iconActive: 'images' },
+  network: { label: 'Friends', icon: 'people-outline', iconActive: 'people' },
   profile: { label: 'Profile', icon: 'person-circle-outline', iconActive: 'person-circle' },
 };
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { incoming } = useNetwork();
 
   return (
-    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]} pointerEvents="box-none">
-      <View style={styles.bar}>
-        {state.routes.map((route, index) => {
-          const tab = tabs[route.name];
-          if (!tab) return null;
+    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+      <View style={styles.bar} accessibilityRole="tablist">
+        {order.map((name) => {
+          if (name === UPLOAD) {
+            return (
+              <View key={name} style={styles.item}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Upload your work"
+                  onPress={() => router.push('/upload')}
+                  style={(s) => [styles.upload, s.pressed && styles.uploadPressed, focusRing(s)]}>
+                  <Ionicons name="add" size={28} color={colors.onPrimary} />
+                </Pressable>
+              </View>
+            );
+          }
+
+          const index = state.routes.findIndex((r) => r.name === name);
+          const route = state.routes[index];
+          const tab = tabs[name];
+          if (!route || !tab) return null;
           const focused = state.index === index;
-          const badge = route.name === 'network' ? incoming.length : 0;
 
           const onPress = () => {
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -44,20 +62,15 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
               accessibilityLabel={tab.label}
-              style={styles.item}>
-              <View style={[styles.iconWrap, focused && styles.iconActive]}>
-                <Ionicons name={focused ? tab.iconActive : tab.icon} size={22} color={focused ? colors.primary : colors.textMuted} />
-                {badge > 0 && (
-                  <View style={styles.badge}>
-                    <AppText variant="small" color={colors.white} style={styles.badgeText}>
-                      {badge}
-                    </AppText>
-                  </View>
-                )}
-              </View>
+              style={(s) => [styles.item, focusRing(s)]}>
+              <Ionicons
+                name={focused ? tab.iconActive : tab.icon}
+                size={22}
+                color={focused ? colors.primary : colors.textSubtle}
+              />
               <AppText
                 variant="small"
-                color={focused ? colors.primary : colors.textMuted}
+                color={focused ? colors.ink : colors.textSubtle}
                 style={[styles.label, focused && styles.labelActive]}
                 numberOfLines={1}>
                 {tab.label}
@@ -71,35 +84,34 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.md },
+  wrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   bar: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xxs,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.md,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+    paddingTop: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
-  item: { flex: 1, alignItems: 'center', gap: 2 },
-  iconWrap: { width: 48, height: 32, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  iconActive: { backgroundColor: colors.primarySoft },
-  label: { fontSize: 10.5, fontWeight: '600' },
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 48, borderRadius: radius.md },
+  label: { fontSize: 11, fontWeight: '600' },
   labelActive: { fontWeight: '800' },
-  badge: {
-    position: 'absolute',
-    top: -2,
-    right: 6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    backgroundColor: colors.accent,
+  upload: {
+    width: 52,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.surface,
   },
-  badgeText: { fontSize: 9, lineHeight: 11, fontWeight: '800' },
+  uploadPressed: { backgroundColor: colors.primaryDark, transform: [{ scale: 0.96 }] },
 });

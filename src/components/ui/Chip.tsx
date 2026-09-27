@@ -1,10 +1,11 @@
-// Pill-shaped chip used for filters, skills and tags.
+// Pill-shaped chip used for filters, specializations and tags.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from './AppText';
 
+import { focusRing } from '@/components/auth/focus';
 import { colors, radius, spacing } from '@/theme';
 import type { IconName } from '@/types';
 
@@ -13,15 +14,15 @@ export interface ChipProps {
   selected?: boolean;
   onPress?: () => void;
   icon?: IconName;
-  color?: string; // accent color when selected / for tinted chips
+  color?: string; // accent color for tinted chips
   tint?: string;
   size?: 'sm' | 'md';
-  trailing?: string; // small extra text, e.g. a skill level
+  trailing?: string; // small extra text, e.g. a count
 }
 
 export function Chip({ label, selected, onPress, icon, color = colors.primary, tint, size = 'md', trailing }: ChipProps) {
-  const bg = selected ? color : tint ?? colors.surface;
-  const fg = selected ? colors.white : tint ? color : colors.text;
+  const bg = selected ? colors.primary : tint ?? colors.surfaceAlt;
+  const fg = selected ? colors.onPrimary : tint ? color : colors.text;
   const content = (
     <View
       style={[
@@ -34,7 +35,7 @@ export function Chip({ label, selected, onPress, icon, color = colors.primary, t
         {label}
       </AppText>
       {trailing && (
-        <AppText variant="small" color={selected ? colors.white : colors.textSubtle}>
+        <AppText variant="small" color={selected ? colors.onPrimary : colors.textSubtle}>
           {trailing}
         </AppText>
       )}
@@ -45,20 +46,22 @@ export function Chip({ label, selected, onPress, icon, color = colors.primary, t
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      style={({ pressed }) => pressed && { opacity: 0.75 }}>
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: !!selected }}
+      accessibilityLabel={label}
+      style={(state) => [state.pressed && { opacity: 0.75 }, focusRing(state), styles.pressable]}>
       {content}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  pressable: { borderRadius: radius.pill },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 36,
+    height: 38,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
     borderWidth: 1,

@@ -1,8 +1,9 @@
-// Rounded white surface with a subtle shadow.
+// Rounded surface with a hairline border.
 
 import { Pressable, StyleSheet, View, type StyleProp, type ViewProps, type ViewStyle } from 'react-native';
 
-import { colors, radius, shadows, spacing } from '@/theme';
+import { focusRing } from '@/components/auth/focus';
+import { colors, radius, spacing } from '@/theme';
 
 export interface CardProps extends ViewProps {
   onPress?: () => void;
@@ -24,7 +25,7 @@ export function Card({ onPress, padded = true, style, children, ...rest }: CardP
       {...rest}
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [cardStyle, pressed && styles.pressed]}>
+      style={(state) => [cardStyle, state.pressed && styles.pressed, focusRing(state)]}>
       {children}
     </Pressable>
   );
@@ -36,8 +37,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.sm,
   },
   padded: { padding: spacing.md },
-  pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
+  pressed: { backgroundColor: colors.surfaceAlt, transform: [{ scale: 0.99 }] },
 });

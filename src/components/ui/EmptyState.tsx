@@ -1,4 +1,4 @@
-// Friendly placeholder for empty lists and searches.
+// Placeholder for sections with no content yet: dashed outline, icon, message, optional action.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, View } from 'react-native';
@@ -14,16 +14,30 @@ export interface EmptyStateProps {
   title: string;
   message?: string;
   actionLabel?: string;
+  actionIcon?: IconName;
   onAction?: () => void;
+  /** Icon color, e.g. the profession color */
+  color?: string;
+  /** Draw inside a dashed box (for dashboard sections); off for full-screen empty lists */
+  boxed?: boolean;
 }
 
-export function EmptyState({ icon, title, message, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  message,
+  actionLabel,
+  actionIcon = 'add',
+  onAction,
+  color = colors.primary,
+  boxed,
+}: EmptyStateProps) {
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, boxed && styles.boxed]}>
       <View style={styles.icon}>
-        <Ionicons name={icon} size={28} color={colors.primary} />
+        <Ionicons name={icon} size={26} color={color} />
       </View>
-      <AppText variant="h3" align="center">
+      <AppText variant="h3" color={colors.ink} align="center">
         {title}
       </AppText>
       {message && (
@@ -31,21 +45,33 @@ export function EmptyState({ icon, title, message, actionLabel, onAction }: Empt
           {message}
         </AppText>
       )}
-      {actionLabel && onAction && <Button label={actionLabel} onPress={onAction} variant="soft" size="sm" icon="add" />}
+      {actionLabel && onAction && (
+        <Button label={actionLabel} onPress={onAction} variant="secondary" size="sm" icon={actionIcon} style={styles.action} />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xxl, paddingHorizontal: spacing.xl },
-  icon: {
-    width: 64,
-    height: 64,
+  boxed: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.borderStrong,
     borderRadius: radius.xl,
-    backgroundColor: colors.primarySoft,
+    paddingVertical: spacing.xl,
+  },
+  icon: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
-  message: { maxWidth: 280, marginBottom: spacing.xs },
+  message: { maxWidth: 300 },
+  action: { marginTop: spacing.xs },
 });

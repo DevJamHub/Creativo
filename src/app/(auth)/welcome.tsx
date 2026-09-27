@@ -1,7 +1,7 @@
 // Auth landing / welcome screen.
-// First screen unauthenticated users see — branding, what Creativo is, and the ways to get in.
+// First screen unauthenticated users see: a bold pitch, the professions Creativo is built for, and the ways in.
 
-import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -12,104 +12,95 @@ import { ErrorBanner } from '@/components/auth/ErrorBanner';
 import { focusRing } from '@/components/auth/focus';
 import { OrDivider } from '@/components/auth/OrDivider';
 import { SocialButtons } from '@/components/auth/SocialButtons';
-import { LogoMark } from '@/components/brand/Logo';
+import { Logo } from '@/components/brand/Logo';
 import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/Button';
+import { professions } from '@/config/professions';
 import { useAuthContext } from '@/store/AuthProvider';
-import { colors, gradients, radius, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
+
+// A taste of who Creativo is for, shown as a loose cloud of tags
+const showcase = professions.filter((p) => p.id !== 'other').slice(0, 6);
 
 export default function WelcomeScreen() {
   const { pending } = useAuthContext();
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <View style={styles.flex}>
-      {/* Soft brand wash behind the logo */}
-      <LinearGradient colors={[...gradients.brand]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.wash} />
+    <AuthScreen showBack={false} centered>
+      {/* Subtle entrance; Reanimated skips it when the OS "reduce motion" setting is on */}
+      <Animated.View entering={FadeInDown.duration(500)}>
+        <Logo size={34} />
 
-      <AuthScreen showBack={false} centered>
-        {/* Subtle entrance; Reanimated skips it when the OS "reduce motion" setting is on */}
-        <Animated.View entering={FadeInDown.duration(500)}>
-          {/* Branding */}
-          <View style={styles.branding}>
-            <LogoMark size={64} />
-            <AppText variant="display" color={colors.ink} align="center" accessibilityRole="header" style={styles.title}>
-              Creativo
-            </AppText>
-            <AppText variant="h3" color={colors.primary} align="center">
-              Discover People. Explore Their Work. Connect.
-            </AppText>
-            <AppText variant="body" color={colors.textMuted} align="center" style={styles.description}>
-              Find professionals, explore their skills, projects and portfolio, and connect with the right person.
-            </AppText>
-          </View>
+        <View style={styles.hero}>
+          <AppText variant="hero" color={colors.ink} accessibilityRole="header">
+            Show your <AppText variant="hero" color={colors.primary}>work.</AppText>
+            {'\n'}Grow your circle.
+          </AppText>
+          <AppText variant="body" color={colors.textMuted}>
+            A home for professionals. Get a dashboard built for what you do, share your work and meet people in
+            your field.
+          </AppText>
+        </View>
 
-          {/* Actions */}
-          <View style={styles.actions}>
-            <SocialButtons onError={setError} />
-            <ErrorBanner message={error} />
+        <View style={styles.cloud} accessibilityLabel="Built for engineers, designers, architects, photographers and more">
+          {showcase.map((p) => (
+            <View key={p.id} style={styles.tag}>
+              <Ionicons name={p.icon} size={14} color={p.color} />
+              <AppText variant="small" color={colors.text} style={styles.tagText}>
+                {p.label}
+              </AppText>
+            </View>
+          ))}
+        </View>
 
-            <OrDivider />
+        <View style={styles.actions}>
+          <SocialButtons onError={setError} />
+          <ErrorBanner message={error} />
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Continue with Email"
-              disabled={pending !== null}
-              onPress={() => router.push('/signup')}
-              style={(state) => [
-                styles.emailBtn,
-                state.pressed && styles.pressed,
-                pending !== null && styles.disabled,
-                focusRing(state),
-              ]}>
-              <AppText variant="bodyStrong" color={colors.white}>
-                Continue with Email
+          <OrDivider />
+
+          <Button
+            label="Continue with Email"
+            icon="mail"
+            size="lg"
+            disabled={pending !== null}
+            onPress={() => router.push('/signup')}
+          />
+        </View>
+
+        <View style={styles.footer}>
+          <AppText variant="body" color={colors.textMuted}>
+            Already have an account?{' '}
+          </AppText>
+          <Link href="/login" asChild>
+            <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
+              <AppText variant="bodyStrong" color={colors.primary}>
+                Log In
               </AppText>
             </Pressable>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <AppText variant="body" color={colors.textMuted}>
-              Already have an account?{' '}
-            </AppText>
-            <Link href="/login" asChild>
-              <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
-                <AppText variant="bodyStrong" color={colors.primary}>
-                  Log In
-                </AppText>
-              </Pressable>
-            </Link>
-          </View>
-        </Animated.View>
-      </AuthScreen>
-    </View>
+          </Link>
+        </View>
+      </Animated.View>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background, overflow: 'hidden' },
-  wash: {
-    position: 'absolute',
-    top: -180,
-    left: '-20%',
-    width: '140%',
-    height: 380,
-    borderBottomLeftRadius: 200,
-    borderBottomRightRadius: 200,
-    opacity: 0.08,
-  },
-  branding: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xxxl },
-  title: { marginTop: spacing.sm },
-  description: { marginTop: spacing.xxs, maxWidth: 340 },
-  actions: { gap: spacing.sm },
-  emailBtn: {
-    minHeight: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
+  hero: { gap: spacing.sm, marginTop: spacing.xxl },
+  cloud: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xl, marginBottom: spacing.xxl },
+  tag: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
-  disabled: { opacity: 0.6 },
+  tagText: { fontWeight: '600' },
+  actions: { gap: spacing.sm },
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: spacing.xxl },
 });

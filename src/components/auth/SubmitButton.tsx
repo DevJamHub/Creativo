@@ -25,8 +25,8 @@ export function SubmitButton({ label, loadingLabel, loading, disabled, onPress }
       onPress={onPress}
       disabled={inactive}
       style={(state) => [styles.button, state.pressed && styles.pressed, inactive && styles.disabled, focusRing(state)]}>
-      {loading && <ActivityIndicator size="small" color={colors.white} />}
-      <AppText variant="bodyStrong" color={colors.white}>
+      {loading && <ActivityIndicator size="small" color={colors.onPrimary} />}
+      <AppText variant="bodyStrong" color={colors.onPrimary}>
         {loading && loadingLabel ? loadingLabel : label}
       </AppText>
     </Pressable>
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
     minHeight: 52,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

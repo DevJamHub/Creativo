@@ -1,23 +1,25 @@
-// Primary action button with a few visual variants.
+// Action button: solid lime for the main action, quieter variants for everything else.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AppText } from './AppText';
 
+import { focusRing } from '@/components/auth/focus';
 import { colors, radius, spacing } from '@/theme';
 import type { IconName } from '@/types';
 
-type Variant = 'primary' | 'soft' | 'outline' | 'ghost' | 'dark' | 'danger';
+type Variant = 'primary' | 'secondary' | 'soft' | 'outline' | 'ghost' | 'dark' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
-  primary: { bg: colors.primary, fg: colors.white, border: colors.primary },
-  soft: { bg: colors.primarySoft, fg: colors.primary, border: colors.primarySoft },
-  outline: { bg: colors.surface, fg: colors.text, border: colors.border },
+  primary: { bg: colors.primary, fg: colors.onPrimary, border: colors.primary },
+  secondary: { bg: colors.surfaceRaised, fg: colors.text, border: colors.border },
+  soft: { bg: colors.primarySoft, fg: colors.primary, border: 'transparent' },
+  outline: { bg: 'transparent', fg: colors.text, border: colors.borderStrong },
   ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
-  dark: { bg: colors.ink, fg: colors.white, border: colors.ink },
-  danger: { bg: colors.dangerSoft, fg: colors.danger, border: colors.dangerSoft },
+  dark: { bg: colors.surfaceRaised, fg: colors.text, border: colors.border },
+  danger: { bg: colors.dangerSoft, fg: colors.danger, border: 'transparent' },
 };
 
 const sizes: Record<Size, { height: number; px: number; icon: number }> = {
@@ -34,6 +36,7 @@ export interface ButtonProps {
   icon?: IconName;
   iconRight?: IconName;
   disabled?: boolean;
+  loading?: boolean;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -46,26 +49,30 @@ export function Button({
   icon,
   iconRight,
   disabled,
+  loading,
   fullWidth,
   style,
 }: ButtonProps) {
   const c = palette[variant];
   const s = sizes[size];
+  const inactive = disabled || loading;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: inactive, busy: loading }}
       onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
+      disabled={inactive}
+      style={(state) => [
         styles.base,
         { backgroundColor: c.bg, borderColor: c.border, height: s.height, paddingHorizontal: s.px },
         fullWidth && styles.full,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
+        state.pressed && styles.pressed,
+        inactive && styles.disabled,
+        focusRing(state),
         style,
       ]}>
-      {icon && <Ionicons name={icon} size={s.icon} color={c.fg} />}
+      {loading ? <ActivityIndicator size="small" color={c.fg} /> : icon && <Ionicons name={icon} size={s.icon} color={c.fg} />}
       <AppText variant={size === 'sm' ? 'caption' : 'bodyStrong'} color={c.fg} numberOfLines={1} style={styles.label}>
         {label}
       </AppText>

@@ -1,4 +1,4 @@
-// Bottom tabs with Creativo's custom floating tab bar.
+// Bottom tabs: Dashboard · Feed · (Upload) · Friends · Profile, drawn by Creativo's own tab bar.
 
 import { Tabs } from 'expo-router/js-tabs';
 
@@ -8,9 +8,8 @@ export default function TabsLayout() {
   return (
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="home" />
-      <Tabs.Screen name="discover" />
+      <Tabs.Screen name="feed" />
       <Tabs.Screen name="network" />
-      <Tabs.Screen name="repository" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

@@ -12,8 +12,9 @@ interface AuthInputProps extends TextInputProps {
   error?: string;
 }
 
-export function AuthInput({ label, error, secureTextEntry, style, ...rest }: AuthInputProps) {
+export function AuthInput({ label, error, secureTextEntry, style, onFocus, onBlur, ...rest }: AuthInputProps) {
   const [hidden, setHidden] = useState(secureTextEntry);
+  const [focused, setFocused] = useState(false);
   const isPassword = secureTextEntry !== undefined;
 
   return (
@@ -21,10 +22,18 @@ export function AuthInput({ label, error, secureTextEntry, style, ...rest }: Aut
       <AppText variant="caption" color={colors.textMuted} style={styles.label}>
         {label}
       </AppText>
-      <View style={[styles.inputRow, error && styles.inputError]}>
+      <View style={[styles.inputRow, rest.multiline && styles.inputRowMultiline, focused && styles.inputFocused, error && styles.inputError]}>
         <TextInput
           {...rest}
           secureTextEntry={hidden}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
           accessibilityLabel={label}
           accessibilityHint={error}
           aria-invalid={!!error}
@@ -60,7 +69,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 50,
+    height: 52,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -68,14 +77,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
   },
+  inputRowMultiline: { height: undefined, minHeight: 120, alignItems: 'stretch' },
+  inputFocused: { borderColor: colors.primary },
   inputError: {
     borderColor: colors.danger,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: colors.text,
+    color: colors.ink,
     height: '100%',
+    // The row draws the focus border; drop the browser's own outline on web
+    outlineWidth: 0,
   },
   error: { marginLeft: 2 },
 });

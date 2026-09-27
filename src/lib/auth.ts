@@ -7,6 +7,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
+import type { ExperienceLevel } from '@/config/professions';
 import { supabase } from '@/lib/supabase';
 
 export type OAuthProvider = Extract<Provider, 'google' | 'apple'>;
@@ -20,7 +21,20 @@ export interface Profile {
   full_name: string | null;
   email: string | null;
   avatar_url: string | null;
+  profession: string | null;
+  specializations: string[];
+  experience_level: ExperienceLevel | null;
+  headline: string | null;
+  /** Set once the user finishes onboarding; null sends them (back) to onboarding */
+  onboarded_at: string | null;
   created_at: string;
+}
+
+export interface OnboardingAnswers {
+  profession: string;
+  specializations: string[];
+  experience_level: ExperienceLevel;
+  headline: string | null;
 }
 
 const isWeb = Platform.OS === 'web';
@@ -193,4 +207,19 @@ export async function getOrCreateProfile(user: User): Promise<Profile | null> {
     .single<Profile>();
   if (insertError && __DEV__) console.warn('[auth] profile create failed', insertError);
   return created ?? null;
+}
+
+async function updateProfile(userId: string, fields: Partial<Profile>): Promise<AuthResult & { profile?: Profile }> {
+  const { data, error } = await supabase.from('profiles').update(fields).eq('id', userId).select().single<Profile>();
+  if (error) return { error: friendlyAuthError(error) };
+  return { error: null, profile: data };
+}
+
+export function saveOnboarding(userId: string, answers: OnboardingAnswers) {
+  return updateProfile(userId, { ...answers, onboarded_at: new Date().toISOString() });
+}
+
+/** Sends the user back through onboarding, e.g. to pick a different profession */
+export function restartOnboarding(userId: string) {
+  return updateProfile(userId, { onboarded_at: null });
 }

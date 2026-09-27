@@ -1,225 +1,165 @@
-// Home / Discover: search, recommendations, categories, recently viewed,
-// suggested connections and explore by profession.
+// Dashboard, tailored to the user's profession (see src/config/professions.ts).
+// Content is empty for now: every stat is 0 and every section shows its empty state.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Logo } from '@/components/brand/Logo';
-import { CategoryTile } from '@/components/category/CategoryTile';
-import { ConnectButton } from '@/components/professional/ConnectButton';
-import { PersonRow } from '@/components/professional/PersonRow';
-import { ProfessionalMiniCard } from '@/components/professional/ProfessionalMiniCard';
+import { focusRing } from '@/components/auth/focus';
+import { QuickAction } from '@/components/dashboard/QuickAction';
+import { StatTile } from '@/components/dashboard/StatTile';
+import { WorkspaceHero } from '@/components/dashboard/WorkspaceHero';
 import { AppText } from '@/components/ui/AppText';
 import { Avatar } from '@/components/ui/Avatar';
-import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { IconButton } from '@/components/ui/IconButton';
-import { SearchBar } from '@/components/ui/SearchBar';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { repositoryStrength } from '@/config/repository';
-import { categories, getCategory, popularSearches } from '@/data/categories';
-import { useApp } from '@/store/AppProvider';
-import { useNetwork, useRecommended } from '@/store/hooks';
-import { colors, gradients, radius, SCREEN_PADDING, spacing, TAB_BAR_SPACE } from '@/theme';
-import type { CategoryId } from '@/types';
-import { firstName } from '@/utils/format';
+import { Screen } from '@/components/ui/Screen';
+import { SectionTitle } from '@/components/ui/SectionTitle';
+import { Toast, useToast } from '@/components/ui/Toast';
+import { getProfession } from '@/config/professions';
+import { useAuthContext } from '@/store/AuthProvider';
+import { colors, spacing } from '@/theme';
 
-const greeting = () => {
-  const h = new Date().getHours();
-  if (h < 11) return 'Good morning';
-  if (h < 15) return 'Good afternoon';
-  if (h < 19) return 'Good evening';
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 11) return 'Good morning';
+  if (hour < 15) return 'Good afternoon';
+  if (hour < 19) return 'Good evening';
   return 'Good night';
-};
+}
 
-export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
-  const { state, professionals } = useApp();
-  const { suggested } = useNetwork();
-  const recommended = useRecommended();
-  const recent = state.recentlyViewed
-    .map((id) => professionals.find((p) => p.id === id))
-    .filter((p) => p !== undefined);
+export default function DashboardScreen() {
+  const { profile, user } = useAuthContext();
+  const toast = useToast();
+  if (!profile) return null; // the root layout only shows tabs once the profile is loaded
 
-  const countIn = (id: CategoryId) => professionals.filter((p) => p.categoryId === id).length;
-  // Popular categories: the user's interests first, then the rest
-  const popular = [
-    ...categories.filter((c) => state.interests.includes(c.id)),
-    ...categories.filter((c) => !state.interests.includes(c.id) && c.id !== 'other'),
-  ].slice(0, 6);
-  const professions = Array.from(new Set(professionals.map((p) => p.profession)));
-  const strength = repositoryStrength(state.me);
-
-  const openSearch = (q?: string) => router.push(q ? { pathname: '/search', params: { q } } : '/search');
-  const openCategory = (id: CategoryId) => router.push({ pathname: '/category/[id]', params: { id } });
+  const profession = getProfession(profile.profession);
+  const name = profile.full_name || user?.email?.split('@')[0] || 'there';
+  const comingSoon = () => toast.show('Coming soon');
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={{ paddingTop: insets.top + spacing.sm, paddingBottom: TAB_BAR_SPACE }}
-      showsVerticalScrollIndicator={false}>
-      {/* Top bar */}
-      <View style={[styles.pad, styles.topBar]}>
-        <Logo size={30} />
-        <View style={styles.topActions}>
-          <IconButton icon="qr-code-outline" accessibilityLabel="My QR card" onPress={() => router.push('/qr')} />
-          <Pressable onPress={() => router.push('/profile')} accessibilityLabel="My profile">
-            <Avatar uri={state.me.avatar} name={state.me.name} size={42} />
+    <View style={styles.flex}>
+      <Screen tabBar>
+        {/* Greeting */}
+        <View style={styles.topBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open your profile"
+            onPress={() => router.navigate('/profile')}
+            style={focusRing}>
+            <Avatar uri={profile.avatar_url} name={name} size={44} />
           </Pressable>
-        </View>
-      </View>
-
-      {/* Hero + search */}
-      <View style={[styles.pad, styles.hero]}>
-        <AppText variant="caption" color={colors.textMuted}>
-          {greeting()}, {firstName(state.me.name)} 👋
-        </AppText>
-        <AppText variant="display">
-          Who do you <AppText variant="display" color={colors.primary}>need</AppText> today?
-        </AppText>
-        <SearchBar onPress={() => openSearch()} placeholder="Try “Architect” or “React”" style={styles.search} />
-      </View>
-
-      {/* Quick searches */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-        {popularSearches.map((q) => (
-          <Chip key={q} label={q} icon="search" size="sm" onPress={() => openSearch(q)} />
-        ))}
-      </ScrollView>
-
-      {/* Recommended */}
-      <View style={styles.block}>
-        <SectionHeader
-          style={styles.pad}
-          title="Recommended for you"
-          subtitle={
-            state.interests.length
-              ? `Based on ${state.interests.map((i) => getCategory(i).name).slice(0, 2).join(' & ')}`
-              : 'Professionals worth knowing'
-          }
-          onAction={() => router.push('/discover')}
-        />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-          {recommended.map((p) => (
-            <ProfessionalMiniCard key={p.id} pro={p} />
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Popular categories */}
-      <View style={[styles.block, styles.pad]}>
-        <SectionHeader title="Popular categories" onAction={() => router.push('/discover')} />
-        <View style={styles.grid}>
-          {popular.map((c) => (
-            <View key={c.id} style={styles.gridCell}>
-              <CategoryTile category={c} count={countIn(c.id)} onPress={() => openCategory(c.id)} />
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Recently viewed */}
-      {recent.length > 0 && (
-        <View style={styles.block}>
-          <SectionHeader style={styles.pad} title="Recently viewed" />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-            {recent.map((p) => (
-              <Pressable
-                key={p.id}
-                style={styles.recent}
-                onPress={() => router.push({ pathname: '/professional/[id]', params: { id: p.id } })}>
-                <Avatar uri={p.avatar} name={p.name} size={60} />
-                <AppText variant="small" style={styles.bold} numberOfLines={1}>
-                  {firstName(p.name)}
-                </AppText>
-                <AppText variant="small" color={colors.textMuted} numberOfLines={1} style={styles.tiny}>
-                  {p.profession}
-                </AppText>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Repository strength banner */}
-      <Pressable style={[styles.pad, styles.block]} onPress={() => router.push('/repository')}>
-        <LinearGradient colors={gradients.ink} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
           <View style={styles.flex}>
-            <AppText variant="overline" color="rgba(255,255,255,0.7)">
-              Your repository
+            <AppText variant="caption" color={colors.textMuted}>
+              {greeting()},
             </AppText>
-            <AppText variant="h3" color={colors.white}>
-              {strength}% complete
+            <AppText variant="h2" color={colors.ink} numberOfLines={1}>
+              {name.split(' ')[0]}
             </AppText>
-            <AppText variant="caption" color="rgba(255,255,255,0.75)">
-              A complete repository helps the right people find you.
-            </AppText>
-            <View style={styles.progress}>
-              <View style={[styles.progressFill, { width: `${strength}%` }]} />
-            </View>
           </View>
-          <View style={styles.bannerIcon}>
-            <Ionicons name="folder-open" size={26} color={colors.white} />
-          </View>
-        </LinearGradient>
-      </Pressable>
+          <IconButton
+            icon="notifications-outline"
+            accessibilityLabel="Notifications"
+            onPress={() => router.push('/notifications')}
+          />
+        </View>
 
-      {/* Suggested connections */}
-      <View style={[styles.block, styles.pad]}>
-        <SectionHeader title="Suggested connections" subtitle="People your network knows" onAction={() => router.push('/network')} />
-        <Card style={styles.listCard}>
-          {suggested.slice(0, 3).map((p, i) => (
-            <View key={p.id} style={i > 0 && styles.rowDivider}>
-              <PersonRow pro={p} right={<ConnectButton pro={p} size="sm" />} />
-            </View>
-          ))}
-        </Card>
-      </View>
+        <WorkspaceHero profession={profession} profile={profile} />
 
-      {/* Explore by profession */}
-      <View style={[styles.block, styles.pad]}>
-        <SectionHeader title="Explore by profession" />
-        <View style={styles.wrapChips}>
-          {professions.map((p) => (
-            <Chip key={p} label={p} onPress={() => openSearch(p)} />
+        {/* Profession stats — all zero until content exists */}
+        <View style={styles.row}>
+          {profession.stats.map((s) => (
+            <StatTile key={s.label} label={s.label} icon={s.icon} value={0} />
           ))}
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Shortcuts for this profession */}
+        <View>
+          <SectionTitle title="Quick actions" icon="flash-outline" />
+          <View style={styles.actions}>
+            {[profession.actions.slice(0, 2), profession.actions.slice(2, 4)].map((pair, i) => (
+              <View key={i} style={styles.row}>
+                {pair.map((a) => (
+                  <QuickAction
+                    key={a.label}
+                    label={a.label}
+                    icon={a.icon}
+                    highlight={a.upload}
+                    onPress={a.upload ? () => router.push('/upload') : comingSoon}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* The specializations picked during onboarding */}
+        {profile.specializations.length > 0 && (
+          <View>
+            <SectionTitle title="Your focus" icon="locate-outline" />
+            <View style={styles.chips}>
+              {profile.specializations.map((f) => (
+                <Chip key={f} label={f} size="sm" color={profession.color} tint={profession.tint} />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Profession sections, empty for now */}
+        {profession.sections.map((s) => (
+          <View key={s.title}>
+            <SectionTitle
+              title={s.title}
+              icon={s.icon}
+              trailing={
+                <AppText variant="caption" color={colors.textSubtle}>
+                  0
+                </AppText>
+              }
+            />
+            <EmptyState
+              boxed
+              icon={s.icon}
+              color={profession.color}
+              title={s.emptyTitle}
+              message={s.emptyText}
+              actionLabel="Add"
+              onAction={comingSoon}
+            />
+          </View>
+        ))}
+
+        <View>
+          <SectionTitle title="Recent activity" icon="pulse-outline" />
+          <View style={styles.activity}>
+            <Ionicons name="time-outline" size={18} color={colors.textSubtle} />
+            <AppText variant="caption" color={colors.textMuted} style={styles.flex}>
+              No activity yet. Views, likes and new friends will show up here.
+            </AppText>
+          </View>
+        </View>
+      </Screen>
+
+      <Toast message={toast.message} aboveTabBar />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  pad: { paddingHorizontal: SCREEN_PADDING },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  topActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  hero: { marginTop: spacing.xl, gap: spacing.xs },
-  search: { marginTop: spacing.sm },
-  chipRow: { gap: spacing.xs, paddingHorizontal: SCREEN_PADDING, paddingTop: spacing.md },
-  block: { marginTop: spacing.xxl, gap: spacing.sm },
-  carousel: { gap: spacing.sm, paddingHorizontal: SCREEN_PADDING, paddingVertical: 4 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 },
-  gridCell: { width: '50%', padding: 6 },
-  recent: { width: 76, alignItems: 'center', gap: 4 },
-  bold: { fontWeight: '700' },
-  tiny: { fontSize: 10 },
-  banner: { borderRadius: radius.xl, padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  flex: { flex: 1, gap: 4 },
-  progress: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)', marginTop: spacing.xs, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.accent },
-  bannerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+  flex: { flex: 1 },
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  row: { flexDirection: 'row', gap: spacing.sm },
+  actions: { gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  activity: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  listCard: { paddingVertical: spacing.xxs },
-  rowDivider: { borderTopWidth: 1, borderTopColor: colors.border },
-  wrapChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
 });

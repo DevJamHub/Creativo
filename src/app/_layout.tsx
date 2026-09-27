@@ -1,7 +1,8 @@
-// Root navigator: auth screens for signed-out users, the app (onboarding, tabs, details) for signed-in users.
+// Root navigator. Which screens exist depends on where the user is:
+// signed out → auth screens · signed in but not introduced yet → onboarding · otherwise → the app.
 
 import * as SplashScreen from 'expo-splash-screen';
-import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
@@ -9,25 +10,34 @@ import { AppProvider } from '@/store/AppProvider';
 import { AuthProvider, useAuthContext } from '@/store/AuthProvider';
 import { colors } from '@/theme';
 
-// Keep the splash screen up until we know whether a session exists
+// Keep the splash screen up until we know who the user is
 SplashScreen.preventAutoHideAsync();
 
 // Navigation theme matching Creativo's palette
 const navTheme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, primary: colors.primary, background: colors.background, card: colors.surface },
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: colors.primary,
+    background: colors.background,
+    card: colors.surface,
+    text: colors.text,
+    border: colors.border,
+  },
 };
 
 function RootStack() {
-  const { isAuthenticated, initializing } = useAuthContext();
+  const { isAuthenticated, initializing, profileState, needsOnboarding } = useAuthContext();
+  const profileReady = isAuthenticated && profileState === 'ready';
 
   useEffect(() => {
-    if (!initializing) SplashScreen.hideAsync();
-  }, [initializing]);
+    if (!initializing && profileState !== 'loading') SplashScreen.hideAsync();
+  }, [initializing, profileState]);
 
   return (
     // Every screen draws its own header, so the native header is hidden
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+      {/* Decides where to go; also shows loading / profile errors */}
       <Stack.Screen name="index" />
 
       {/* Signed out: landing, login, sign up, forgot password */}
@@ -35,14 +45,23 @@ function RootStack() {
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
       </Stack.Protected>
 
-      {/* Signed in: the application */}
-      <Stack.Protected guard={isAuthenticated}>
+      {/* Signed in, first time (or changing profession): introduction */}
+      <Stack.Protected guard={profileReady && needsOnboarding}>
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'fade' }} />
+      </Stack.Protected>
+
+      {/* Signed in and introduced: the application */}
+      <Stack.Protected guard={profileReady && !needsOnboarding}>
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="search" options={{ animation: 'fade_from_bottom' }} />
-        <Stack.Screen name="qr" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="edit/profile" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="edit/[section]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="upload" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="notifications" />
+
+        {/* Legacy mock-data screens, no longer linked from the app — pending removal */}
+        <Stack.Screen name="search" />
+        <Stack.Screen name="qr" />
+        <Stack.Screen name="explore" />
+        <Stack.Screen name="edit/profile" />
+        <Stack.Screen name="edit/[section]" />
         <Stack.Screen name="professional/[id]" />
         <Stack.Screen name="repository/[id]" />
         <Stack.Screen name="category/[id]" />
@@ -59,9 +78,10 @@ function RootStack() {
 export default function RootLayout() {
   return (
     <AuthProvider>
+      {/* AppProvider only feeds the legacy screens above; remove both together */}
       <AppProvider>
         <ThemeProvider value={navTheme}>
-          <StatusBar style="dark" />
+          <StatusBar style="light" />
           <RootStack />
         </ThemeProvider>
       </AppProvider>

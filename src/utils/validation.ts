@@ -7,16 +7,16 @@ export function isValidEmail(email: string) {
 }
 
 export function emailError(email: string): string | undefined {
-  if (!email.trim()) return 'Email is required.';
-  if (!isValidEmail(email)) return 'Please enter a valid email address.';
+  if (!email.trim()) return 'Email wajib diisi.';
+  if (!isValidEmail(email)) return 'Masukkan alamat email yang valid.';
 }
 
 export function newPasswordError(password: string): string | undefined {
-  if (!password) return 'Password is required.';
-  if (password.length < MIN_PASSWORD_LENGTH) return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  if (!password) return 'Kata sandi wajib diisi.';
+  if (password.length < MIN_PASSWORD_LENGTH) return `Kata sandi minimal ${MIN_PASSWORD_LENGTH} karakter.`;
 }
 
 export function confirmPasswordError(password: string, confirm: string): string | undefined {
-  if (!confirm) return 'Please confirm your password.';
-  if (password !== confirm) return 'Passwords do not match.';
+  if (!confirm) return 'Ulangi kata sandi kamu.';
+  if (password !== confirm) return 'Kata sandi tidak cocok.';
 }

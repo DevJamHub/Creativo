@@ -5,10 +5,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { AppText } from '@/components/ui/AppText';
-import { Button } from '@/components/ui/Button';
-import { useAuthContext } from '@/store/AuthProvider';
+import { useAuthContext } from '@/controllers/AuthProvider';
 import { colors, spacing } from '@/theme';
+import { AppText } from '@/views/ui/AppText';
+import { Button } from '@/views/ui/Button';
 
 export default function Index() {
   const { isAuthenticated, initializing, profileState, needsOnboarding, retryProfile, signOut, pending } =
@@ -21,7 +21,7 @@ export default function Index() {
   if (profileState === 'loading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Loading your profile" />
+        <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Memuat profil kamu" />
       </View>
     );
   }
@@ -32,14 +32,14 @@ export default function Index() {
       <View style={styles.center}>
         <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
         <AppText variant="h2" color={colors.ink} align="center" accessibilityRole="header">
-          Couldn&apos;t load your profile
+          Gagal memuat profil kamu
         </AppText>
         <AppText variant="body" color={colors.textMuted} align="center" style={styles.message}>
-          Check your connection and try again.
+          Periksa koneksi internet kamu, lalu coba lagi.
         </AppText>
         <View style={styles.actions}>
-          <Button label="Try again" icon="refresh" onPress={retryProfile} />
-          <Button label="Log out" variant="ghost" loading={pending === 'signOut'} onPress={signOut} />
+          <Button label="Coba lagi" icon="refresh" onPress={retryProfile} />
+          <Button label="Keluar" variant="ghost" loading={pending === 'signOut'} onPress={signOut} />
         </View>
       </View>
     );

@@ -4,17 +4,17 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AuthInput } from '@/components/auth/AuthInput';
-import { AuthScreen } from '@/components/auth/AuthScreen';
-import { ErrorBanner } from '@/components/auth/ErrorBanner';
-import { focusRing } from '@/components/auth/focus';
-import { OrDivider } from '@/components/auth/OrDivider';
-import { SocialButtons } from '@/components/auth/SocialButtons';
-import { SubmitButton } from '@/components/auth/SubmitButton';
-import { AppText } from '@/components/ui/AppText';
-import { useAuthContext } from '@/store/AuthProvider';
+import { useAuthContext } from '@/controllers/AuthProvider';
 import { colors, spacing } from '@/theme';
 import { emailError } from '@/utils/validation';
+import { AuthInput } from '@/views/auth/AuthInput';
+import { AuthScreen } from '@/views/auth/AuthScreen';
+import { ErrorBanner } from '@/views/auth/ErrorBanner';
+import { OrDivider } from '@/views/auth/OrDivider';
+import { SocialButtons } from '@/views/auth/SocialButtons';
+import { SubmitButton } from '@/views/auth/SubmitButton';
+import { focusRing } from '@/views/auth/focus';
+import { AppText } from '@/views/ui/AppText';
 
 export default function LoginScreen() {
   const { signInWithEmail, pending } = useAuthContext();
@@ -25,7 +25,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   function validate() {
-    const errs = { email: emailError(email), password: password ? undefined : 'Password is required.' };
+    const errs = { email: emailError(email), password: password ? undefined : 'Kata sandi wajib diisi.' };
     setFieldErrors(errs);
     return !errs.email && !errs.password;
   }
@@ -39,7 +39,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <AuthScreen title="Welcome Back" subtitle="Log in to continue to Creativo.">
+    <AuthScreen title="Selamat Datang Kembali" subtitle="Masuk untuk melanjutkan ke Creativo.">
       <SocialButtons onError={setError} />
 
       <OrDivider />
@@ -47,7 +47,7 @@ export default function LoginScreen() {
       <View style={styles.form}>
         <AuthInput
           label="Email"
-          placeholder="Enter your email"
+          placeholder="Masukkan email kamu"
           keyboardType="email-address"
           autoComplete="email"
           textContentType="emailAddress"
@@ -60,8 +60,8 @@ export default function LoginScreen() {
           error={fieldErrors.email}
         />
         <AuthInput
-          label="Password"
-          placeholder="Enter your password"
+          label="Kata Sandi"
+          placeholder="Masukkan kata sandi kamu"
           secureTextEntry
           autoComplete="current-password"
           textContentType="password"
@@ -78,8 +78,8 @@ export default function LoginScreen() {
         <ErrorBanner message={error} />
 
         <SubmitButton
-          label="Log In"
-          loadingLabel="Signing in..."
+          label="Masuk"
+          loadingLabel="Sedang masuk..."
           loading={pending === 'email'}
           disabled={pending !== null}
           onPress={handleLogin}
@@ -89,7 +89,7 @@ export default function LoginScreen() {
           <Link href="/forgot-password" asChild>
             <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
               <AppText variant="caption" color={colors.primary}>
-                Forgot password?
+                Lupa kata sandi?
               </AppText>
             </Pressable>
           </Link>
@@ -98,12 +98,12 @@ export default function LoginScreen() {
 
       <View style={styles.footer}>
         <AppText variant="body" color={colors.textMuted}>
-          Don&apos;t have an account?{' '}
+          Belum punya akun?{' '}
         </AppText>
         <Link href="/signup" replace asChild>
           <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
             <AppText variant="bodyStrong" color={colors.primary}>
-              Create Account
+              Buat Akun
             </AppText>
           </Pressable>
         </Link>

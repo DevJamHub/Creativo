@@ -5,15 +5,15 @@ import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AuthInput } from '@/components/auth/AuthInput';
-import { AuthScreen } from '@/components/auth/AuthScreen';
-import { ErrorBanner } from '@/components/auth/ErrorBanner';
-import { focusRing } from '@/components/auth/focus';
-import { SubmitButton } from '@/components/auth/SubmitButton';
-import { AppText } from '@/components/ui/AppText';
-import { useAuthContext } from '@/store/AuthProvider';
+import { useAuthContext } from '@/controllers/AuthProvider';
 import { colors, radius, spacing } from '@/theme';
 import { emailError as validateEmail } from '@/utils/validation';
+import { AuthInput } from '@/views/auth/AuthInput';
+import { AuthScreen } from '@/views/auth/AuthScreen';
+import { ErrorBanner } from '@/views/auth/ErrorBanner';
+import { SubmitButton } from '@/views/auth/SubmitButton';
+import { focusRing } from '@/views/auth/focus';
+import { AppText } from '@/views/ui/AppText';
 
 export default function ForgotPasswordScreen() {
   const { sendPasswordReset, pending } = useAuthContext();
@@ -43,29 +43,29 @@ export default function ForgotPasswordScreen() {
             <Ionicons name="mail-outline" size={36} color={colors.primary} />
           </View>
           <AppText variant="h2" color={colors.ink} align="center" accessibilityRole="header">
-            Check Your Inbox
+            Cek Kotak Masuk Kamu
           </AppText>
           <AppText variant="body" color={colors.textMuted} align="center">
-            If an account exists for{' '}
+            Jika ada akun yang terdaftar dengan{' '}
             <AppText variant="bodyStrong" color={colors.ink}>
               {email.trim()}
             </AppText>
-            , we sent a link to reset your password.
+            , kami telah mengirim tautan untuk mengatur ulang kata sandi kamu.
           </AppText>
           <View style={styles.hint}>
             <AppText variant="caption" color={colors.textSubtle} align="center">
-              Didn&apos;t get it? Check your spam folder, or try again in a minute.
+              Tidak menerimanya? Cek folder spam, atau coba lagi dalam satu menit.
             </AppText>
           </View>
         </View>
 
-        <SubmitButton label="Back to Log In" onPress={() => router.replace('/login')} />
+        <SubmitButton label="Kembali ke Halaman Masuk" onPress={() => router.replace('/login')} />
         <Pressable
           accessibilityRole="button"
           onPress={() => setSent(false)}
           style={(s) => [styles.retry, focusRing(s)]}>
           <AppText variant="bodyStrong" color={colors.primary}>
-            Use a different email
+            Gunakan email lain
           </AppText>
         </Pressable>
       </AuthScreen>
@@ -74,12 +74,12 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthScreen
-      title="Reset Password"
-      subtitle="Enter the email linked to your Creativo account and we'll send you a reset link.">
+      title="Atur Ulang Kata Sandi"
+      subtitle="Masukkan email yang terhubung dengan akun Creativo kamu, kami akan mengirimkan tautan untuk mengatur ulang kata sandi.">
       <View style={styles.form}>
         <AuthInput
           label="Email"
-          placeholder="Enter your email"
+          placeholder="Masukkan email kamu"
           keyboardType="email-address"
           autoComplete="email"
           textContentType="emailAddress"
@@ -96,8 +96,8 @@ export default function ForgotPasswordScreen() {
         <ErrorBanner message={error} />
 
         <SubmitButton
-          label="Send Reset Link"
-          loadingLabel="Sending..."
+          label="Kirim Tautan"
+          loadingLabel="Mengirim..."
           loading={pending === 'reset'}
           disabled={pending !== null}
           onPress={handleReset}
@@ -106,12 +106,12 @@ export default function ForgotPasswordScreen() {
 
       <View style={styles.footer}>
         <AppText variant="body" color={colors.textMuted}>
-          Remember your password?{' '}
+          Ingat kata sandi kamu?{' '}
         </AppText>
         <Link href="/login" replace asChild>
           <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
             <AppText variant="bodyStrong" color={colors.primary}>
-              Log In
+              Masuk
             </AppText>
           </Pressable>
         </Link>

@@ -2,7 +2,7 @@
 
 import { Tabs } from 'expo-router/js-tabs';
 
-import { TabBar } from '@/components/navigation/TabBar';
+import { TabBar } from '@/views/navigation/TabBar';
 
 export default function TabsLayout() {
   return (

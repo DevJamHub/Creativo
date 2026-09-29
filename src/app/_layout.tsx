@@ -2,12 +2,14 @@
 // signed out → auth screens · signed in but not introduced yet → onboarding · otherwise → the app.
 
 import * as SplashScreen from 'expo-splash-screen';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import { AppProvider } from '@/store/AppProvider';
-import { AuthProvider, useAuthContext } from '@/store/AuthProvider';
+import { AuthProvider, useAuthContext } from '@/controllers/AuthProvider';
+import { MessagesProvider } from '@/controllers/MessagesProvider';
+import { PostsProvider } from '@/controllers/PostsProvider';
+import { SocialProvider } from '@/controllers/SocialProvider';
 import { colors } from '@/theme';
 
 // Keep the splash screen up until we know who the user is
@@ -15,9 +17,9 @@ SplashScreen.preventAutoHideAsync();
 
 // Navigation theme matching Creativo's palette
 const navTheme = {
-  ...DarkTheme,
+  ...DefaultTheme,
   colors: {
-    ...DarkTheme.colors,
+    ...DefaultTheme.colors,
     primary: colors.primary,
     background: colors.background,
     card: colors.surface,
@@ -54,18 +56,14 @@ function RootStack() {
       <Stack.Protected guard={profileReady && !needsOnboarding}>
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="upload" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="post/[id]/index" />
+        <Stack.Screen name="post/[id]/comments" />
+        <Stack.Screen name="post/[id]/edit" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
         <Stack.Screen name="notifications" />
-
-        {/* Legacy mock-data screens, no longer linked from the app — pending removal */}
-        <Stack.Screen name="search" />
-        <Stack.Screen name="qr" />
-        <Stack.Screen name="explore" />
-        <Stack.Screen name="edit/profile" />
-        <Stack.Screen name="edit/[section]" />
-        <Stack.Screen name="professional/[id]" />
-        <Stack.Screen name="repository/[id]" />
-        <Stack.Screen name="category/[id]" />
-        <Stack.Screen name="connections/[id]" />
+        <Stack.Screen name="user/[id]/index" />
+        <Stack.Screen name="user/[id]/connections" />
+        <Stack.Screen name="chat/[id]" />
       </Stack.Protected>
 
       {/* Deep-link targets from Supabase emails / OAuth; they work in either state */}
@@ -78,13 +76,16 @@ function RootStack() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      {/* AppProvider only feeds the legacy screens above; remove both together */}
-      <AppProvider>
-        <ThemeProvider value={navTheme}>
-          <StatusBar style="light" />
-          <RootStack />
-        </ThemeProvider>
-      </AppProvider>
+      <PostsProvider>
+        <SocialProvider>
+          <MessagesProvider>
+            <ThemeProvider value={navTheme}>
+              <StatusBar style="dark" />
+              <RootStack />
+            </ThemeProvider>
+          </MessagesProvider>
+        </SocialProvider>
+      </PostsProvider>
     </AuthProvider>
   );
 }

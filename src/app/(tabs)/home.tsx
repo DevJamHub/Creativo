@@ -1,165 +1,204 @@
-// Dashboard, tailored to the user's profession (see src/config/professions.ts).
-// Content is empty for now: every stat is 0 and every section shows its empty state.
+// Beranda: a showcase seen from a client's point of view.
+// Browse professionals by field, search by name or skill, filter to people open to opportunities
+// (for recruiters), and look through their latest work.
+// Your own workspace (profile strength, stats) lives on the Profil tab.
 
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { focusRing } from '@/components/auth/focus';
-import { QuickAction } from '@/components/dashboard/QuickAction';
-import { StatTile } from '@/components/dashboard/StatTile';
-import { WorkspaceHero } from '@/components/dashboard/WorkspaceHero';
-import { AppText } from '@/components/ui/AppText';
-import { Avatar } from '@/components/ui/Avatar';
-import { Chip } from '@/components/ui/Chip';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { IconButton } from '@/components/ui/IconButton';
-import { Screen } from '@/components/ui/Screen';
-import { SectionTitle } from '@/components/ui/SectionTitle';
-import { Toast, useToast } from '@/components/ui/Toast';
-import { getProfession } from '@/config/professions';
-import { useAuthContext } from '@/store/AuthProvider';
-import { colors, spacing } from '@/theme';
+import { useAuthContext } from '@/controllers/AuthProvider';
+import { usePosts } from '@/controllers/PostsProvider';
+import { useSocial } from '@/controllers/SocialProvider';
+import { getProfession, professions } from '@/models/profession';
+import { colors, CONTENT_MAX_WIDTH, SCREEN_PADDING, spacing, TAB_BAR_SPACE } from '@/theme';
+import { focusRing } from '@/views/auth/focus';
+import { PostGrid } from '@/views/feed/PostGrid';
+import { ProfessionalTile } from '@/views/feed/ProfessionalTile';
+import { AppText } from '@/views/ui/AppText';
+import { Avatar } from '@/views/ui/Avatar';
+import { Chip } from '@/views/ui/Chip';
+import { EmptyState } from '@/views/ui/EmptyState';
+import { IconButton } from '@/views/ui/IconButton';
+import { SearchBar } from '@/views/ui/SearchBar';
+import { SectionTitle } from '@/views/ui/SectionTitle';
 
 function greeting() {
   const hour = new Date().getHours();
-  if (hour < 11) return 'Good morning';
-  if (hour < 15) return 'Good afternoon';
-  if (hour < 19) return 'Good evening';
-  return 'Good night';
+  if (hour < 11) return 'Selamat pagi';
+  if (hour < 15) return 'Selamat siang';
+  if (hour < 19) return 'Selamat sore';
+  return 'Selamat malam';
 }
 
-export default function DashboardScreen() {
-  const { profile, user } = useAuthContext();
-  const toast = useToast();
-  if (!profile) return null; // the root layout only shows tabs once the profile is loaded
+const ALL = 'all';
 
-  const profession = getProfession(profile.profession);
-  const name = profile.full_name || user?.email?.split('@')[0] || 'there';
-  const comingSoon = () => toast.show('Coming soon');
+export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const { profile, user } = useAuthContext();
+  const { posts, profiles, state, refreshing, refresh } = usePosts();
+  const { unreadCount } = useSocial();
+
+  const [field, setField] = useState<string>(ALL);
+  const [hiringOnly, setHiringOnly] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const name = profile?.full_name || user?.email?.split('@')[0] || 'kamu';
+  const q = query.trim().toLowerCase();
+
+  // Professionals matching the filters and the search text (name, profession, specializations, headline)
+  const pros = useMemo(
+    () =>
+      Object.values(profiles).filter((p) => {
+        if (field !== ALL && p.profession !== field) return false;
+        if (hiringOnly && !p.open_to_work) return false;
+        if (!q) return true;
+        const haystack = [p.full_name, getProfession(p.profession).label, p.headline, ...p.specializations];
+        return haystack.some((text) => text?.toLowerCase().includes(q));
+      }),
+    [profiles, field, hiringOnly, q],
+  );
+
+  const postCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of posts) counts[p.author_id] = (counts[p.author_id] ?? 0) + 1;
+    return counts;
+  }, [posts]);
+
+  const works = useMemo(() => {
+    const allowed = new Set(pros.map((p) => p.id));
+    return posts.filter((p) => allowed.has(p.author_id));
+  }, [posts, pros]);
+
+  const pickField = (id: string) => setField(id);
 
   return (
-    <View style={styles.flex}>
-      <Screen tabBar>
+    <View style={[styles.flex, { paddingTop: insets.top }]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_SPACE + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}>
         {/* Greeting */}
         <View style={styles.topBar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open your profile"
-            onPress={() => router.navigate('/profile')}
-            style={focusRing}>
-            <Avatar uri={profile.avatar_url} name={name} size={44} />
+          <Pressable accessibilityRole="button" accessibilityLabel="Buka profilmu" onPress={() => router.navigate('/profile')} style={focusRing}>
+            <Avatar uri={profile?.avatar_url} name={name} size={40} />
           </Pressable>
-          <View style={styles.flex}>
-            <AppText variant="caption" color={colors.textMuted}>
-              {greeting()},
-            </AppText>
-            <AppText variant="h2" color={colors.ink} numberOfLines={1}>
-              {name.split(' ')[0]}
-            </AppText>
-          </View>
+          <AppText variant="mono" color={colors.textMuted} style={styles.flex} numberOfLines={1}>
+            {greeting()}, {name.split(' ')[0]}
+          </AppText>
           <IconButton
             icon="notifications-outline"
-            accessibilityLabel="Notifications"
+            accessibilityLabel={unreadCount > 0 ? `Notifikasi, ${unreadCount} belum dibaca` : 'Notifikasi'}
+            dot={unreadCount > 0}
             onPress={() => router.push('/notifications')}
           />
         </View>
 
-        <WorkspaceHero profession={profession} profile={profile} />
+        <View style={styles.hero}>
+          <AppText variant="display" color={colors.ink} accessibilityRole="header">
+            Temukan profesional untuk proyekmu.
+          </AppText>
+          <AppText variant="body" color={colors.textMuted}>
+            Lihat karya nyata mereka dulu, lalu ikuti, hubungkan, atau kirim pesan ke kandidat yang cocok.
+          </AppText>
+        </View>
 
-        {/* Profession stats — all zero until content exists */}
-        <View style={styles.row}>
-          {profession.stats.map((s) => (
-            <StatTile key={s.label} label={s.label} icon={s.icon} value={0} />
+        <SearchBar value={query} onChangeText={setQuery} placeholder="Cari nama, profesi, atau keahlian…" />
+
+        {/* Field filter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.bleed}>
+          <Chip
+            label="Siap direkrut"
+            icon="briefcase"
+            size="sm"
+            color={colors.success}
+            tint={colors.successSoft}
+            selected={hiringOnly}
+            onPress={() => setHiringOnly((v) => !v)}
+          />
+          <Chip label="Semua" size="sm" selected={field === ALL} onPress={() => pickField(ALL)} />
+          {professions.map((p) => (
+            <Chip
+              key={p.id}
+              label={p.label}
+              icon={p.icon}
+              size="sm"
+              color={p.color}
+              tint={p.tint}
+              selected={field === p.id}
+              onPress={() => pickField(field === p.id ? ALL : p.id)}
+            />
           ))}
-        </View>
+        </ScrollView>
 
-        {/* Shortcuts for this profession */}
-        <View>
-          <SectionTitle title="Quick actions" icon="flash-outline" />
-          <View style={styles.actions}>
-            {[profession.actions.slice(0, 2), profession.actions.slice(2, 4)].map((pair, i) => (
-              <View key={i} style={styles.row}>
-                {pair.map((a) => (
-                  <QuickAction
-                    key={a.label}
-                    label={a.label}
-                    icon={a.icon}
-                    highlight={a.upload}
-                    onPress={a.upload ? () => router.push('/upload') : comingSoon}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* The specializations picked during onboarding */}
-        {profile.specializations.length > 0 && (
-          <View>
-            <SectionTitle title="Your focus" icon="locate-outline" />
-            <View style={styles.chips}>
-              {profile.specializations.map((f) => (
-                <Chip key={f} label={f} size="sm" color={profession.color} tint={profession.tint} />
-              ))}
+        {state === 'loading' ? (
+          <ActivityIndicator color={colors.primary} style={styles.loading} accessibilityLabel="Memuat etalase" />
+        ) : (
+          <>
+            {/* Professionals */}
+            <View>
+              <SectionTitle
+                title="Profesional"
+                icon="people-outline"
+                trailing={
+                  <AppText variant="mono" color={colors.textSubtle}>
+                    {pros.length}
+                  </AppText>
+                }
+              />
+              {pros.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pros} style={styles.bleed}>
+                  {pros.map((p) => (
+                    <ProfessionalTile
+                      key={p.id}
+                      pro={p}
+                      postCount={postCount[p.id] ?? 0}
+                    />
+                  ))}
+                </ScrollView>
+              ) : (
+                <EmptyState boxed icon="search-outline" title="Tidak ada yang cocok" message="Coba kata kunci lain atau pilih bidang yang berbeda." />
+              )}
             </View>
-          </View>
+
+            {/* Works */}
+            <View>
+              <SectionTitle title="Karya terbaru" icon="images-outline" />
+              {works.length > 0 ? (
+                <PostGrid posts={works} columns={2} authors={profiles} />
+              ) : (
+                <EmptyState
+                  boxed
+                  icon="images-outline"
+                  title="Belum ada karya"
+                  message="Karya yang diunggah para profesional akan tampil di sini."
+                />
+              )}
+            </View>
+          </>
         )}
-
-        {/* Profession sections, empty for now */}
-        {profession.sections.map((s) => (
-          <View key={s.title}>
-            <SectionTitle
-              title={s.title}
-              icon={s.icon}
-              trailing={
-                <AppText variant="caption" color={colors.textSubtle}>
-                  0
-                </AppText>
-              }
-            />
-            <EmptyState
-              boxed
-              icon={s.icon}
-              color={profession.color}
-              title={s.emptyTitle}
-              message={s.emptyText}
-              actionLabel="Add"
-              onAction={comingSoon}
-            />
-          </View>
-        ))}
-
-        <View>
-          <SectionTitle title="Recent activity" icon="pulse-outline" />
-          <View style={styles.activity}>
-            <Ionicons name="time-outline" size={18} color={colors.textSubtle} />
-            <AppText variant="caption" color={colors.textMuted} style={styles.flex}>
-              No activity yet. Views, likes and new friends will show up here.
-            </AppText>
-          </View>
-        </View>
-      </Screen>
-
-      <Toast message={toast.message} aboveTabBar />
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  row: { flexDirection: 'row', gap: spacing.sm },
-  actions: { gap: spacing.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  activity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+  content: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: SCREEN_PADDING,
+    paddingTop: spacing.sm,
+    gap: spacing.lg,
   },
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  hero: { gap: spacing.xs },
+  // Horizontal rows run edge to edge while their first item lines up with the page padding
+  bleed: { marginHorizontal: -SCREEN_PADDING },
+  chips: { gap: spacing.xs, paddingHorizontal: SCREEN_PADDING },
+  pros: { gap: spacing.sm, paddingHorizontal: SCREEN_PADDING },
+  loading: { marginTop: spacing.xl },
 });

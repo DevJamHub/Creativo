@@ -5,12 +5,12 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { AuthScreen } from '@/components/auth/AuthScreen';
-import { ErrorBanner } from '@/components/auth/ErrorBanner';
-import { SubmitButton } from '@/components/auth/SubmitButton';
-import { exchangeAuthCode, friendlyAuthError } from '@/lib/auth';
-import { useAuthContext } from '@/store/AuthProvider';
+import { useAuthContext } from '@/controllers/AuthProvider';
+import { exchangeAuthCode, friendlyAuthError } from '@/services/auth.service';
 import { colors, spacing } from '@/theme';
+import { AuthScreen } from '@/views/auth/AuthScreen';
+import { ErrorBanner } from '@/views/auth/ErrorBanner';
+import { SubmitButton } from '@/views/auth/SubmitButton';
 
 export default function AuthCallbackScreen() {
   const { code, error_description } = useLocalSearchParams<{ code?: string; error_description?: string }>();
@@ -30,10 +30,10 @@ export default function AuthCallbackScreen() {
 
   if (error) {
     return (
-      <AuthScreen showBack={false} centered title="Sign-in failed">
+      <AuthScreen showBack={false} centered title="Gagal masuk">
         <View style={styles.gap}>
           <ErrorBanner message={error} />
-          <SubmitButton label="Back to Log In" onPress={() => router.replace('/login')} />
+          <SubmitButton label="Kembali ke Halaman Masuk" onPress={() => router.replace('/login')} />
         </View>
       </AuthScreen>
     );
@@ -41,7 +41,7 @@ export default function AuthCallbackScreen() {
 
   return (
     <View style={styles.center}>
-      <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Signing in" />
+      <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Sedang masuk" />
     </View>
   );
 }

@@ -8,48 +8,48 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AuthInput } from '@/components/auth/AuthInput';
-import { ErrorBanner } from '@/components/auth/ErrorBanner';
-import { focusRing } from '@/components/auth/focus';
-import { Logo } from '@/components/brand/Logo';
-import { ProfessionTile } from '@/components/onboarding/ProfessionTile';
-import { AppText } from '@/components/ui/AppText';
-import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
-import { IconButton } from '@/components/ui/IconButton';
+import { AuthInput } from '@/views/auth/AuthInput';
+import { ErrorBanner } from '@/views/auth/ErrorBanner';
+import { focusRing } from '@/views/auth/focus';
+import { Logo } from '@/views/brand/Logo';
+import { ProfessionTile } from '@/views/onboarding/ProfessionTile';
+import { AppText } from '@/views/ui/AppText';
+import { Avatar } from '@/views/ui/Avatar';
+import { Button } from '@/views/ui/Button';
+import { Chip } from '@/views/ui/Chip';
+import { IconButton } from '@/views/ui/IconButton';
 import {
   experienceLabel,
   experienceLevels,
   getProfession,
   professions,
   type ExperienceLevel,
-} from '@/config/professions';
-import { useAuthContext } from '@/store/AuthProvider';
+  HEADLINE_MAX,
+  MAX_FOCUS,
+} from '@/models/profession';
+import { useAuthContext } from '@/controllers/AuthProvider';
+import type { IconName } from '@/models/icon';
 import { colors, radius, SCREEN_PADDING, spacing } from '@/theme';
-import type { IconName } from '@/types';
 
 const STEPS = ['intro', 'profession', 'focus', 'headline'] as const;
 type Step = (typeof STEPS)[number];
 
-const MAX_FOCUS = 5;
-const HEADLINE_MAX = 120;
 
 const features: { icon: IconName; title: string; text: string }[] = [
   {
     icon: 'grid-outline',
-    title: 'A dashboard for your profession',
-    text: 'Stats, shortcuts and sections tailored to the work you do.',
+    title: 'Dasbor sesuai profesimu',
+    text: 'Statistik, pintasan, dan bagian yang disesuaikan dengan pekerjaanmu.',
   },
   {
     icon: 'images-outline',
-    title: 'A feed for your work',
-    text: 'Share screenshots, shots and projects with the community.',
+    title: 'Feed untuk karyamu',
+    text: 'Bagikan screenshot, shot, dan proyek ke komunitas.',
   },
   {
     icon: 'people-outline',
-    title: 'Your professional circle',
-    text: 'Find friends and people in your field.',
+    title: 'Relasi profesionalmu',
+    text: 'Temukan teman dan orang-orang di bidangmu.',
   },
 ];
 
@@ -65,7 +65,7 @@ export default function OnboardingScreen() {
   const [headline, setHeadline] = useState(profile?.headline ?? '');
   const [error, setError] = useState<string | null>(null);
 
-  const name = profile?.full_name || user?.email?.split('@')[0] || 'there';
+  const name = profile?.full_name || user?.email?.split('@')[0] || 'kamu';
   const firstName = name.split(' ')[0];
   const profession = professionId ? getProfession(professionId) : null;
   const stepIndex = STEPS.indexOf(step);
@@ -108,11 +108,11 @@ export default function OnboardingScreen() {
       {/* Top bar: back + progress */}
       <View style={styles.topBar}>
         {stepIndex > 0 ? (
-          <IconButton icon="arrow-back" accessibilityLabel="Back" size={40} onPress={goBack} />
+          <IconButton icon="arrow-back" accessibilityLabel="Kembali" size={40} onPress={goBack} />
         ) : (
           <Logo size={28} showWordmark={false} />
         )}
-        <View style={styles.progress} accessibilityLabel={`Step ${stepIndex + 1} of ${STEPS.length}`}>
+        <View style={styles.progress} accessibilityLabel={`Langkah ${stepIndex + 1} dari ${STEPS.length}`}>
           {STEPS.map((s, i) => (
             <View key={s} style={[styles.progressBar, i <= stepIndex && styles.progressBarDone]} />
           ))}
@@ -130,14 +130,14 @@ export default function OnboardingScreen() {
           {step === 'intro' && (
             <>
               <AppText variant="overline" color={colors.primary}>
-                Introduction
+                Perkenalan
               </AppText>
               <AppText variant="display" color={colors.ink} accessibilityRole="header">
-                Hi {firstName},{'\n'}welcome to Creativo.
+                Hai {firstName},{'\n'}selamat datang di Creativo.
               </AppText>
               <AppText variant="body" color={colors.textMuted}>
-                Before you start, tell us a little about what you do. We&apos;ll set up a workspace that fits your
-                work. It takes less than a minute.
+                Sebelum mulai, ceritakan sedikit tentang pekerjaanmu. Kami akan menyiapkan ruang kerja yang sesuai
+                dengan pekerjaanmu. Cuma butuh kurang dari satu menit.
               </AppText>
               <View style={styles.features}>
                 {features.map((f) => (
@@ -162,10 +162,10 @@ export default function OnboardingScreen() {
           {step === 'profession' && (
             <>
               <AppText variant="display" color={colors.ink} accessibilityRole="header">
-                What do you do?
+                Apa pekerjaanmu?
               </AppText>
               <AppText variant="body" color={colors.textMuted}>
-                Pick the one closest to your work. Your dashboard is built around it, and you can change it later.
+                Pilih yang paling mendekati pekerjaanmu. Dasbor kamu akan disesuaikan, dan kamu bisa mengubahnya nanti.
               </AppText>
               <View style={styles.grid} accessibilityRole="radiogroup">
                 {professions.map((p) => (
@@ -184,10 +184,10 @@ export default function OnboardingScreen() {
           {step === 'focus' && profession && (
             <>
               <AppText variant="display" color={colors.ink} accessibilityRole="header">
-                What do you focus on?
+                Apa fokus kamu?
               </AppText>
               <AppText variant="body" color={colors.textMuted}>
-                Pick up to {MAX_FOCUS}. They show on your profile and shape your dashboard.
+                Pilih maksimal {MAX_FOCUS}. Pilihan ini tampil di profilmu dan membentuk dasbor kamu.
               </AppText>
               <View style={styles.chips}>
                 {profession.focus.map((f) => (
@@ -195,11 +195,11 @@ export default function OnboardingScreen() {
                 ))}
               </View>
               <AppText variant="small" color={colors.textSubtle}>
-                {focus.length}/{MAX_FOCUS} selected
+                {focus.length}/{MAX_FOCUS} dipilih
               </AppText>
 
               <AppText variant="h3" color={colors.ink} style={styles.subheading}>
-                Experience level
+                Tingkat pengalaman
               </AppText>
               <View style={styles.levels} accessibilityRole="radiogroup">
                 {experienceLevels.map((l) => {
@@ -234,10 +234,10 @@ export default function OnboardingScreen() {
           {step === 'headline' && profession && (
             <>
               <AppText variant="display" color={colors.ink} accessibilityRole="header">
-                Introduce yourself
+                Perkenalkan dirimu
               </AppText>
               <AppText variant="body" color={colors.textMuted}>
-                One line people see on your profile. You can skip this for now.
+                Satu kalimat yang dilihat orang di profilmu. Kamu bisa melewati ini dulu.
               </AppText>
               <AuthInput
                 label="Headline"
@@ -255,7 +255,7 @@ export default function OnboardingScreen() {
 
               {/* Live preview of the profile card others will see */}
               <AppText variant="overline" color={colors.textMuted} style={styles.subheading}>
-                Preview
+                Pratinjau
               </AppText>
               <View style={styles.preview}>
                 <View style={styles.previewTop}>
@@ -294,7 +294,7 @@ export default function OnboardingScreen() {
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         {step === 'headline' && profession ? (
           <Button
-            label={`Enter my ${profession.workspace}`}
+            label={`Masuk ke ${profession.workspace}`}
             iconRight="arrow-forward"
             size="lg"
             loading={saving}
@@ -302,7 +302,7 @@ export default function OnboardingScreen() {
           />
         ) : (
           <Button
-            label={step === 'intro' ? "Let's go" : 'Continue'}
+            label={step === 'intro' ? 'Ayo mulai' : 'Lanjut'}
             iconRight="arrow-forward"
             size="lg"
             disabled={!canContinue}

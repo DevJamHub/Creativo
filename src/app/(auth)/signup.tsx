@@ -5,17 +5,17 @@ import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AuthInput } from '@/components/auth/AuthInput';
-import { AuthScreen } from '@/components/auth/AuthScreen';
-import { ErrorBanner } from '@/components/auth/ErrorBanner';
-import { focusRing } from '@/components/auth/focus';
-import { OrDivider } from '@/components/auth/OrDivider';
-import { SocialButtons } from '@/components/auth/SocialButtons';
-import { SubmitButton } from '@/components/auth/SubmitButton';
-import { AppText } from '@/components/ui/AppText';
-import { useAuthContext } from '@/store/AuthProvider';
+import { useAuthContext } from '@/controllers/AuthProvider';
 import { colors, spacing } from '@/theme';
 import { confirmPasswordError, emailError, newPasswordError } from '@/utils/validation';
+import { AuthInput } from '@/views/auth/AuthInput';
+import { AuthScreen } from '@/views/auth/AuthScreen';
+import { ErrorBanner } from '@/views/auth/ErrorBanner';
+import { OrDivider } from '@/views/auth/OrDivider';
+import { SocialButtons } from '@/views/auth/SocialButtons';
+import { SubmitButton } from '@/views/auth/SubmitButton';
+import { focusRing } from '@/views/auth/focus';
+import { AppText } from '@/views/ui/AppText';
 
 type Field = 'fullName' | 'email' | 'password' | 'confirmPassword';
 
@@ -34,7 +34,7 @@ export default function SignUpScreen() {
 
   function validate() {
     const errs: Partial<Record<Field, string>> = {
-      fullName: values.fullName.trim() ? undefined : 'Full name is required.',
+      fullName: values.fullName.trim() ? undefined : 'Nama lengkap wajib diisi.',
       email: emailError(values.email),
       password: newPasswordError(values.password),
       confirmPassword: confirmPasswordError(values.password, values.confirmPassword),
@@ -62,17 +62,17 @@ export default function SignUpScreen() {
             <Ionicons name="mail-outline" size={36} color={colors.primary} />
           </View>
           <AppText variant="h2" color={colors.ink} align="center" accessibilityRole="header">
-            Confirm Your Email
+            Konfirmasi Email Kamu
           </AppText>
           <AppText variant="body" color={colors.textMuted} align="center">
-            We sent a confirmation link to{'\n'}
+            Kami telah mengirim tautan konfirmasi ke{'\n'}
             <AppText variant="bodyStrong" color={colors.ink}>
               {confirmationSentTo}
             </AppText>
-            {'\n'}Open it on this device to finish creating your account.
+            {'\n'}Buka tautan tersebut di perangkat ini untuk menyelesaikan pembuatan akun.
           </AppText>
         </View>
-        <SubmitButton label="Back to Log In" onPress={() => router.replace('/login')} />
+        <SubmitButton label="Kembali ke Halaman Masuk" onPress={() => router.replace('/login')} />
       </AuthScreen>
     );
   }
@@ -80,15 +80,15 @@ export default function SignUpScreen() {
   const busy = pending !== null;
 
   return (
-    <AuthScreen title="Create Your Account" subtitle="Join Creativo today.">
+    <AuthScreen title="Buat Akun Kamu" subtitle="Bergabunglah dengan Creativo hari ini.">
       <SocialButtons onError={setError} />
 
       <OrDivider />
 
       <View style={styles.form}>
         <AuthInput
-          label="Full Name"
-          placeholder="Enter your full name"
+          label="Nama Lengkap"
+          placeholder="Masukkan nama lengkap kamu"
           autoComplete="name"
           textContentType="name"
           autoCapitalize="words"
@@ -98,7 +98,7 @@ export default function SignUpScreen() {
         />
         <AuthInput
           label="Email"
-          placeholder="Enter your email"
+          placeholder="Masukkan email kamu"
           keyboardType="email-address"
           autoComplete="email"
           textContentType="emailAddress"
@@ -107,8 +107,8 @@ export default function SignUpScreen() {
           error={fieldErrors.email}
         />
         <AuthInput
-          label="Password"
-          placeholder="Create a password"
+          label="Kata Sandi"
+          placeholder="Buat kata sandi"
           secureTextEntry
           autoComplete="new-password"
           textContentType="newPassword"
@@ -117,8 +117,8 @@ export default function SignUpScreen() {
           error={fieldErrors.password}
         />
         <AuthInput
-          label="Confirm Password"
-          placeholder="Confirm your password"
+          label="Konfirmasi Kata Sandi"
+          placeholder="Ulangi kata sandi kamu"
           secureTextEntry
           autoComplete="new-password"
           textContentType="newPassword"
@@ -132,8 +132,8 @@ export default function SignUpScreen() {
         <ErrorBanner message={error} />
 
         <SubmitButton
-          label="Create Account"
-          loadingLabel="Creating account..."
+          label="Buat Akun"
+          loadingLabel="Membuat akun..."
           loading={pending === 'email'}
           disabled={busy}
           onPress={handleSignUp}
@@ -142,12 +142,12 @@ export default function SignUpScreen() {
 
       <View style={styles.footer}>
         <AppText variant="body" color={colors.textMuted}>
-          Already have an account?{' '}
+          Sudah punya akun?{' '}
         </AppText>
         <Link href="/login" replace asChild>
           <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
             <AppText variant="bodyStrong" color={colors.primary}>
-              Log In
+              Masuk
             </AppText>
           </Pressable>
         </Link>

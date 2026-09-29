@@ -5,14 +5,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { AuthInput } from '@/components/auth/AuthInput';
-import { AuthScreen } from '@/components/auth/AuthScreen';
-import { ErrorBanner } from '@/components/auth/ErrorBanner';
-import { SubmitButton } from '@/components/auth/SubmitButton';
-import { exchangeAuthCode, updatePassword } from '@/lib/auth';
-import { useAuthContext } from '@/store/AuthProvider';
+import { useAuthContext } from '@/controllers/AuthProvider';
+import { exchangeAuthCode, updatePassword } from '@/services/auth.service';
 import { colors, spacing } from '@/theme';
 import { confirmPasswordError, newPasswordError } from '@/utils/validation';
+import { AuthInput } from '@/views/auth/AuthInput';
+import { AuthScreen } from '@/views/auth/AuthScreen';
+import { ErrorBanner } from '@/views/auth/ErrorBanner';
+import { SubmitButton } from '@/views/auth/SubmitButton';
 
 export default function ResetPasswordScreen() {
   const { code } = useLocalSearchParams<{ code?: string }>();
@@ -51,7 +51,7 @@ export default function ResetPasswordScreen() {
   if (verifying || initializing) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Verifying reset link" />
+        <ActivityIndicator size="large" color={colors.primary} accessibilityLabel="Memverifikasi tautan" />
       </View>
     );
   }
@@ -59,21 +59,21 @@ export default function ResetPasswordScreen() {
   // No valid recovery session: the link was expired, already used, or opened on another device
   if (!isAuthenticated) {
     return (
-      <AuthScreen showBack={false} centered title="Link expired" subtitle="Request a new password reset link to continue.">
+      <AuthScreen showBack={false} centered title="Tautan kedaluwarsa" subtitle="Minta tautan baru untuk mengatur ulang kata sandi.">
         <View style={styles.form}>
           <ErrorBanner message={linkError} />
-          <SubmitButton label="Request a new link" onPress={() => router.replace('/forgot-password')} />
+          <SubmitButton label="Minta tautan baru" onPress={() => router.replace('/forgot-password')} />
         </View>
       </AuthScreen>
     );
   }
 
   return (
-    <AuthScreen showBack={false} title="Choose a New Password" subtitle="Enter a new password for your Creativo account.">
+    <AuthScreen showBack={false} title="Buat Kata Sandi Baru" subtitle="Masukkan kata sandi baru untuk akun Creativo kamu.">
       <View style={styles.form}>
         <AuthInput
-          label="New Password"
-          placeholder="Create a password"
+          label="Kata Sandi Baru"
+          placeholder="Buat kata sandi"
           secureTextEntry
           autoComplete="new-password"
           textContentType="newPassword"
@@ -85,8 +85,8 @@ export default function ResetPasswordScreen() {
           error={fieldErrors.password}
         />
         <AuthInput
-          label="Confirm Password"
-          placeholder="Confirm your password"
+          label="Konfirmasi Kata Sandi"
+          placeholder="Ulangi kata sandi kamu"
           secureTextEntry
           autoComplete="new-password"
           textContentType="newPassword"
@@ -102,7 +102,7 @@ export default function ResetPasswordScreen() {
 
         <ErrorBanner message={error} />
 
-        <SubmitButton label="Save Password" loadingLabel="Saving..." loading={saving} onPress={handleSave} />
+        <SubmitButton label="Simpan Kata Sandi" loadingLabel="Menyimpan..." loading={saving} onPress={handleSave} />
       </View>
     </AuthScreen>
   );

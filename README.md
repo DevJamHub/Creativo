@@ -1,56 +1,77 @@
-# Welcome to your Expo app 👋
+# Creativo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikasi mobile (Expo / React Native + Supabase) yang memadukan media sosial dan LinkedIn. Para profesional memamerkan karya dan kegiatan mereka di feed, recruiter dan klien mencari kandidat lewat karya nyata, dan semua orang membangun koneksi profesional.
 
-## Get started
+- **Beranda**: etalase dari sudut pandang klien atau recruiter, berisi cari profesional, filter bidang dan **Siap direkrut**, serta karya terbaru.
+- **Feed** (Untukmu · Diikuti · Bidangku): postingan ala Instagram: foto + caption, suka (termasuk ketuk dua kali di foto), komentar dengan balasan, suka & bagikan komentar, dan bagikan postingan. Pemilik bisa edit caption atau hapus.
+- **+**: upload cepat. Galeri langsung terbuka.
+- **Profil** (gaya LinkedIn): banner, foto besar, headline, lalu Karya · Pengikut · Koneksi. Edit profil mengatur foto, nama, bio, profesi, fokus, dan status **Terbuka untuk peluang**.
+- **Profil orang lain** (`/user/[id]`): ketuk nama atau foto siapa pun. Ada tombol Ikuti/Terhubung, Pesan, dan Bagikan, info koneksi bersama, serta karya mereka.
+- **Koneksi**: terbentuk saat dua orang saling mengikuti, seperti koneksi di LinkedIn.
+- **Teman**: cari orang, lalu Pesan (DM, live), Koneksi, Pengikut, dan Saran.
+- **Notifikasi**: suka, komentar, balasan, suka komentar, dan pengikut baru. Dibuat oleh trigger database dan masuk live lewat Realtime.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Menjalankan
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env      # isi EXPO_PUBLIC_SUPABASE_URL dan EXPO_PUBLIC_SUPABASE_ANON_KEY
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Cek sebelum commit:
 
-### Other setup steps
+```bash
+npx tsc --noEmit
+npx expo lint
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Struktur (MVC)
 
-## Learn more
+```
+src/
+├── app/            Route (Expo Router): tiap file adalah satu layar
+│                   Menyusun view dan memanggil controller, tanpa akses data langsung
+├── models/         Bentuk data dan aturan domain, tanpa I/O
+│   ├── profile.ts      Profile, ProfileEdits, PublicProfile
+│   ├── notification.ts jenis notifikasi + teksnya
+│   ├── post.ts         Post, LocalImage, batas foto/caption
+│   ├── profession.ts   daftar profesi, tingkat pengalaman, batas fokus/bio
+│   ├── relation.ts     Ikuti / Mengikuti / Terhubung (koneksi)
+│   ├── message.ts      Message, Conversation
+│   └── icon.ts         tipe nama ikon
+├── services/       Akses data ke Supabase (Auth, database, storage)
+│   ├── supabase.ts         client
+│   ├── auth.service.ts     login/daftar/OAuth/reset + simpan profil
+│   ├── posts.service.ts    postingan, unggah foto, suka, komentar
+│   ├── social.service.ts   ikuti/berhenti, notifikasi + realtime
+│   └── messages.service.ts pesan langsung, inbox, tanda dibaca + realtime
+├── controllers/    State dan aksi yang dipakai layar (React context + hooks)
+│   ├── useAuth.ts / AuthProvider.tsx   sesi, profil, onboarding, edit profil
+│   ├── PostsProvider.tsx               feed bersama: unggah, edit caption, hapus, suka
+│   ├── SocialProvider.tsx              yang kamu ikuti, pengikutmu, notifikasi
+│   ├── MessagesProvider.tsx / useChat.ts   inbox dan satu percakapan
+│   ├── useConnections.ts               pengikut/koneksi user mana pun + koneksi bersama
+│   └── useComments.ts                  komentar satu postingan: balas, suka, hapus
+├── views/          Komponen tampilan yang bisa dipakai ulang
+│   ├── ui/          tombol, teks, chip, avatar, toast...
+│   ├── auth/        komponen layar masuk/daftar
+│   ├── feed/        PostCard, PostGrid, ImageCarousel, CommentItem, ProfessionalTile
+│   ├── profile/     ProfileHeader, ProfileTabs, PersonRow, FollowButton, shareProfile
+│   ├── messages/    ConversationRow
+│   ├── navigation/  TabBar
+│   ├── onboarding/  ProfessionTile
+│   └── brand/       Logo
+├── theme/          Token desain: tema terang "Notion + Claude"
+└── utils/          Helper murni (validasi form, waktu relatif, kelengkapan profil)
 
-To learn more about developing your project with Expo, look at the following resources:
+supabase/migrations/   Skema database (profiles, posts, likes, comments + balasan, follows, notifications, messages, storage, RLS)
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Aturan alurnya: **app → controllers → services → Supabase**. `models` boleh dipakai semua lapisan. `views` hanya menerima props (dan boleh membaca controller untuk hal kecil seperti user saat ini).
 
-## Join the community
+## Catatan
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Semua teks di aplikasi berbahasa Indonesia. Komentar kode tetap berbahasa Inggris.
+- Postingan disimpan di tabel `posts` dan foto di bucket storage publik `posts`, di folder `<user_id>/`.
+- Profil orang lain dibaca lewat fungsi `public_profiles()`, sehingga email tidak pernah terbuka ke user lain.

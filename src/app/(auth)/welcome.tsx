@@ -7,17 +7,17 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { AuthScreen } from '@/components/auth/AuthScreen';
-import { ErrorBanner } from '@/components/auth/ErrorBanner';
-import { focusRing } from '@/components/auth/focus';
-import { OrDivider } from '@/components/auth/OrDivider';
-import { SocialButtons } from '@/components/auth/SocialButtons';
-import { Logo } from '@/components/brand/Logo';
-import { AppText } from '@/components/ui/AppText';
-import { Button } from '@/components/ui/Button';
-import { professions } from '@/config/professions';
-import { useAuthContext } from '@/store/AuthProvider';
+import { useAuthContext } from '@/controllers/AuthProvider';
+import { professions } from '@/models/profession';
 import { colors, radius, spacing } from '@/theme';
+import { AuthScreen } from '@/views/auth/AuthScreen';
+import { ErrorBanner } from '@/views/auth/ErrorBanner';
+import { OrDivider } from '@/views/auth/OrDivider';
+import { SocialButtons } from '@/views/auth/SocialButtons';
+import { focusRing } from '@/views/auth/focus';
+import { Logo } from '@/views/brand/Logo';
+import { AppText } from '@/views/ui/AppText';
+import { Button } from '@/views/ui/Button';
 
 // A taste of who Creativo is for, shown as a loose cloud of tags
 const showcase = professions.filter((p) => p.id !== 'other').slice(0, 6);
@@ -34,16 +34,16 @@ export default function WelcomeScreen() {
 
         <View style={styles.hero}>
           <AppText variant="hero" color={colors.ink} accessibilityRole="header">
-            Show your <AppText variant="hero" color={colors.primary}>work.</AppText>
-            {'\n'}Grow your circle.
+            Tunjukkan <AppText variant="hero" color={colors.primary}>karyamu.</AppText>
+            {'\n'}Perluas relasimu.
           </AppText>
           <AppText variant="body" color={colors.textMuted}>
-            A home for professionals. Get a dashboard built for what you do, share your work and meet people in
-            your field.
+            Rumah bagi para profesional. Dapatkan dasbor yang sesuai dengan pekerjaanmu, bagikan karyamu, dan temui
+            orang-orang di bidangmu.
           </AppText>
         </View>
 
-        <View style={styles.cloud} accessibilityLabel="Built for engineers, designers, architects, photographers and more">
+        <View style={styles.cloud} accessibilityLabel="Dibuat untuk engineer, desainer, arsitek, fotografer, dan lainnya">
           {showcase.map((p) => (
             <View key={p.id} style={styles.tag}>
               <Ionicons name={p.icon} size={14} color={p.color} />
@@ -61,7 +61,7 @@ export default function WelcomeScreen() {
           <OrDivider />
 
           <Button
-            label="Continue with Email"
+            label="Lanjutkan dengan Email"
             icon="mail"
             size="lg"
             disabled={pending !== null}
@@ -71,12 +71,12 @@ export default function WelcomeScreen() {
 
         <View style={styles.footer}>
           <AppText variant="body" color={colors.textMuted}>
-            Already have an account?{' '}
+            Sudah punya akun?{' '}
           </AppText>
           <Link href="/login" asChild>
             <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
               <AppText variant="bodyStrong" color={colors.primary}>
-                Log In
+                Masuk
               </AppText>
             </Pressable>
           </Link>

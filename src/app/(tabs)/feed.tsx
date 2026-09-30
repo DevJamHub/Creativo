@@ -1,8 +1,9 @@
 // Feed: work professionals share, newest first, Instagram-style. Pull down to refresh.
 // "Untukmu" shows everyone, "Diikuti" the people you follow, "Bidangku" people in your profession.
+// The chosen tab is remembered in local storage, so the feed reopens where you left it.
 
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +11,7 @@ import { useAuthContext } from '@/controllers/AuthProvider';
 import { usePosts } from '@/controllers/PostsProvider';
 import { useSocial } from '@/controllers/SocialProvider';
 import { getProfession } from '@/models/profession';
+import { localKeys, localStore } from '@/services/storage';
 import { colors, CONTENT_MAX_WIDTH, SCREEN_PADDING, spacing, TAB_BAR_SPACE } from '@/theme';
 import { PostCard } from '@/views/feed/PostCard';
 import { AppText } from '@/views/ui/AppText';
@@ -19,6 +21,7 @@ import { SegmentedControl } from '@/views/ui/SegmentedControl';
 import { Toast, useToast } from '@/views/ui/Toast';
 
 type FeedView = 'forYou' | 'following' | 'field';
+const feedViews: FeedView[] = ['forYou', 'following', 'field'];
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
@@ -28,6 +31,17 @@ export default function FeedScreen() {
   const { isFollowing } = useSocial();
   const [view, setView] = useState<FeedView>('forYou');
   const toast = useToast();
+
+  useEffect(() => {
+    localStore.get<FeedView>(localKeys.feedView, 'forYou').then((saved) => {
+      if (feedViews.includes(saved)) setView(saved);
+    });
+  }, []);
+
+  function changeView(next: FeedView) {
+    setView(next);
+    localStore.set(localKeys.feedView, next);
+  }
 
   const visible = useMemo(() => {
     if (view === 'following') return posts.filter((p) => isFollowing(p.author_id));
@@ -70,7 +84,7 @@ export default function FeedScreen() {
           { value: 'field', label: 'Bidangku' },
         ]}
         value={view}
-        onChange={setView}
+        onChange={changeView}
       />
     </View>
   );

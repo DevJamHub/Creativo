@@ -1,10 +1,12 @@
 // Supabase client for Creativo.
-// Uses AsyncStorage for persistent sessions on native and localStorage on web.
+// The session is kept in SECURE STORAGE on native (encrypted, key in Keychain/Keystore — see storage.ts)
+// and in localStorage on web, where SecureStore doesn't exist.
 // Only the public anon key is exposed here — never the service-role key.
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
+
+import { secureSessionStorage } from '@/services/storage';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -21,7 +23,7 @@ const isServer = isWeb && typeof window === 'undefined';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: isWeb ? undefined : AsyncStorage,
+    storage: isWeb ? undefined : secureSessionStorage,
     autoRefreshToken: !isServer,
     persistSession: !isServer,
     // On web the OAuth provider redirects back with ?code=..., which Supabase picks up itself.

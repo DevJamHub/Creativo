@@ -5,12 +5,16 @@ export const MAX_POST_IMAGES = 10;
 export const CAPTION_MAX = 2200;
 export const COMMENT_MAX = 1000;
 
+/** "karya" is portfolio work (the default profile tab), "post" an everyday update. */
+export type PostKind = 'post' | 'karya';
+
 export interface Post {
   id: string;
   author_id: string;
   /** Paths inside the "posts" storage bucket; the first one is the cover */
   image_paths: string[];
   caption: string;
+  kind: PostKind;
   created_at: string;
   updated_at: string;
   /** Counted by the database when the feed loads, then kept up to date locally */

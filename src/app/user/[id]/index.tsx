@@ -1,5 +1,5 @@
 // Someone else's profile, LinkedIn-style: cover + photo, headline and role, Karya · Pengikut · Koneksi,
-// koneksi you share, Ikuti / Pesan / Bagikan, then their work and a Tentang tab.
+// koneksi you share, Ikuti / Pesan / Bagikan, then Karya (grid, default) · Post (list) · About tabs.
 // Opening your own id sends you to the Profil tab instead.
 
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
@@ -16,6 +16,7 @@ import { colors, CONTENT_MAX_WIDTH, SCREEN_PADDING, spacing } from '@/theme';
 import { PostGrid } from '@/views/feed/PostGrid';
 import { FollowButton } from '@/views/profile/FollowButton';
 import { ProfileHeader } from '@/views/profile/ProfileHeader';
+import { PostList } from '@/views/profile/PostList';
 import { InfoRow, ProfileTabs, type ProfileTab } from '@/views/profile/ProfileTabs';
 import { shareProfile } from '@/views/profile/shareProfile';
 import { AppText } from '@/views/ui/AppText';
@@ -34,7 +35,7 @@ export default function UserProfileScreen() {
   const { posts, profiles, state } = usePosts();
   const { relation } = useSocial();
   const { followers, connections, mutualConnections } = useConnections(id);
-  const [tab, setTab] = useState<ProfileTab>('posts');
+  const [tab, setTab] = useState<ProfileTab>('karya');
   const toast = useToast();
 
   if (id && id === user?.id) return <Redirect href="/profile" />;
@@ -44,6 +45,8 @@ export default function UserProfileScreen() {
   const profession = getProfession(person?.profession);
   const level = experienceLabel(person?.experience_level);
   const theirPosts = posts.filter((p) => p.author_id === id);
+  const theirKarya = theirPosts.filter((p) => p.kind === 'karya');
+  const theirPostsOnly = theirPosts.filter((p) => p.kind === 'post');
   const rel = id ? relation(id) : 'none';
   const openConnections = (list: 'followers' | 'connections') =>
     router.push({ pathname: '/user/[id]/connections', params: { id: id!, tab: list } });
@@ -85,7 +88,7 @@ export default function UserProfileScreen() {
             headline={person.headline}
             openToWork={person.open_to_work}
             stats={[
-              { label: 'Karya', value: theirPosts.length },
+              { label: 'Karya', value: theirKarya.length },
               { label: 'Pengikut', value: followers.length, onPress: () => openConnections('followers') },
               { label: 'Koneksi', value: connections.length, onPress: () => openConnections('connections') },
             ]}>
@@ -134,13 +137,20 @@ export default function UserProfileScreen() {
 
           <ProfileTabs value={tab} onChange={setTab} />
 
-          {tab === 'posts' &&
-            (theirPosts.length > 0 ? (
+          {tab === 'post' &&
+            (theirPostsOnly.length > 0 ? (
+              <PostList posts={theirPostsOnly} />
+            ) : (
+              <EmptyState icon="chatbubble-outline" color={profession.color} title="Belum ada post" message={`${name} belum membuat post.`} />
+            ))}
+
+          {tab === 'karya' &&
+            (theirKarya.length > 0 ? (
               <View style={styles.bleed}>
-                <PostGrid posts={theirPosts} gap={2} rounded={false} />
+                <PostGrid posts={theirKarya} gap={2} rounded={false} />
               </View>
             ) : (
-              <EmptyState icon={profession.showcase.icon} color={profession.color} title="Belum ada postingan" message={`${name} belum mengunggah karya.`} />
+              <EmptyState icon={profession.showcase.icon} color={profession.color} title="Belum ada karya" message={`${name} belum mengunggah karya.`} />
             ))}
 
           {tab === 'about' && (

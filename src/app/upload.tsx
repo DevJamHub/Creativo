@@ -1,16 +1,17 @@
 // Quick upload (modal, opened by the "+" in the tab bar).
-// The photo library opens right away; pick up to 10 photos, write a caption, post to the feed.
+// The photo library opens right away; pick up to 10 photos (or shoot them with the camera), write a caption, post.
+// Choose Karya (portfolio, the default) or Post (everyday update); ?kind= preselects it.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
 import { usePosts } from '@/controllers/PostsProvider';
-import { CAPTION_MAX, MAX_POST_IMAGES, type LocalImage } from '@/models/post';
+import { CAPTION_MAX, MAX_POST_IMAGES, type LocalImage, type PostKind } from '@/models/post';
 import { getProfession } from '@/models/profession';
 import { colors, radius, spacing, typography } from '@/theme';
 import { ErrorBanner } from '@/views/auth/ErrorBanner';
@@ -20,17 +21,20 @@ import { Avatar } from '@/views/ui/Avatar';
 import { Button } from '@/views/ui/Button';
 import { IconButton } from '@/views/ui/IconButton';
 import { Screen } from '@/views/ui/Screen';
+import { SegmentedControl } from '@/views/ui/SegmentedControl';
 
 const close = () => (router.canGoBack() ? router.back() : router.replace('/feed'));
 
 export default function UploadScreen() {
   const { profile, user } = useAuthContext();
   const { create } = usePosts();
+  const params = useLocalSearchParams<{ kind?: PostKind }>();
   const profession = getProfession(profile?.profession);
   const name = profile?.full_name || user?.email?.split('@')[0] || 'Kamu';
 
   const [images, setImages] = useState<LocalImage[]>([]);
   const [caption, setCaption] = useState('');
+  const [kind, setKind] = useState<PostKind>(params.kind === 'post' ? 'post' : 'karya');
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const openedOnce = useRef(false);
@@ -44,6 +48,28 @@ export default function UploadScreen() {
       selectionLimit: room,
       quality: 0.8,
     });
+    addAssets(result);
+  }
+
+  async function takePhoto() {
+    if (images.length >= MAX_POST_IMAGES) return;
+    // On web the browser asks by itself, and any await before launching would get the camera blocked
+    if (Platform.OS !== 'web') {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        setError(
+          permission.canAskAgain
+            ? 'Izinkan akses kamera untuk mengambil foto.'
+            : 'Akses kamera ditolak. Aktifkan lewat Pengaturan perangkat untuk memakai kamera.',
+        );
+        return;
+      }
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.8 });
+    addAssets(result);
+  }
+
+  function addAssets(result: ImagePicker.ImagePickerResult) {
     if (result.canceled) return;
     setError(null);
     setImages((cur) => [...cur, ...result.assets.map((a) => ({ uri: a.uri, mimeType: a.mimeType }))].slice(0, MAX_POST_IMAGES));
@@ -61,7 +87,7 @@ export default function UploadScreen() {
     if (images.length === 0 || posting) return;
     setPosting(true);
     setError(null);
-    const result = await create(images, caption);
+    const result = await create(images, caption, kind);
     setPosting(false);
     if (result.error) setError(result.error);
     else router.replace('/feed');
@@ -86,22 +112,34 @@ export default function UploadScreen() {
           />
         </View>
       }>
+      <SegmentedControl
+        segments={[
+          { value: 'karya', label: 'Karya' },
+          { value: 'post', label: 'Post' },
+        ]}
+        value={kind}
+        onChange={setKind}
+      />
+
       {images.length === 0 ? (
-        // Nothing picked yet (or the picker was closed): a big target to try again
-        <Pressable
-          accessibilityRole="button"
-          onPress={pickImages}
-          style={(state) => [styles.dropzone, state.pressed && styles.pressed, focusRing(state)]}>
-          <View style={styles.dropIcon}>
-            <Ionicons name={profession.showcase.icon} size={30} color={profession.color} />
-          </View>
-          <AppText variant="h3" color={colors.ink} align="center">
-            Pilih {profession.showcase.noun}
-          </AppText>
-          <AppText variant="mono" color={colors.textMuted} align="center">
-            maks. {MAX_POST_IMAGES} foto · JPG / PNG
-          </AppText>
-        </Pressable>
+        // Nothing picked yet (or the picker was closed): a big target to try again, or shoot with the camera
+        <View style={styles.block}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={pickImages}
+            style={(state) => [styles.dropzone, state.pressed && styles.pressed, focusRing(state)]}>
+            <View style={styles.dropIcon}>
+              <Ionicons name={profession.showcase.icon} size={30} color={profession.color} />
+            </View>
+            <AppText variant="h3" color={colors.ink} align="center">
+              Pilih {profession.showcase.noun}
+            </AppText>
+            <AppText variant="mono" color={colors.textMuted} align="center">
+              maks. {MAX_POST_IMAGES} foto · JPG / PNG
+            </AppText>
+          </Pressable>
+          <Button label="Ambil foto dengan kamera" icon="camera-outline" variant="secondary" onPress={takePhoto} />
+        </View>
       ) : (
         <View style={styles.block}>
           <Image source={{ uri: images[0].uri }} style={styles.cover} contentFit="cover" accessibilityLabel="Foto sampul" />
@@ -120,13 +158,22 @@ export default function UploadScreen() {
               </View>
             ))}
             {images.length < MAX_POST_IMAGES && (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Tambah foto"
-                onPress={pickImages}
-                style={(state) => [styles.thumb, styles.addThumb, focusRing(state)]}>
-                <Ionicons name="add" size={24} color={colors.textMuted} />
-              </Pressable>
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Tambah foto dari galeri"
+                  onPress={pickImages}
+                  style={(state) => [styles.thumb, styles.addThumb, focusRing(state)]}>
+                  <Ionicons name="add" size={24} color={colors.textMuted} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Ambil foto dengan kamera"
+                  onPress={takePhoto}
+                  style={(state) => [styles.thumb, styles.addThumb, focusRing(state)]}>
+                  <Ionicons name="camera-outline" size={24} color={colors.textMuted} />
+                </Pressable>
+              </>
             )}
           </ScrollView>
           <AppText variant="mono" color={colors.textSubtle}>

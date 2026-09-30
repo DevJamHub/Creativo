@@ -33,11 +33,11 @@ Semua halaman juga memakai `theme/` (warna, huruf) dan `views/ui/` (tombol, teks
 | Onboarding | `app/onboarding.tsx` | `views/onboarding/ProfessionTile`, `models/profession` |
 | **Beranda** (tab) | `app/(tabs)/home.tsx` | `views/feed/ProfessionalTile`, `views/feed/PostGrid`, `controllers/PostsProvider`, `controllers/SocialProvider` |
 | **Feed** (tab) | `app/(tabs)/feed.tsx` | `views/feed/PostCard`, `views/feed/ImageCarousel`, `controllers/PostsProvider` |
-| **Upload** (tombol +) | `app/upload.tsx` | `controllers/PostsProvider`, `models/post` |
+| **Upload** (tombol +) | `app/upload.tsx` | `controllers/PostsProvider`, `models/post`, `views/ui/SegmentedControl` (pilih Karya/Post) |
 | **Teman** (tab) | `app/(tabs)/network.tsx` | `views/messages/ConversationRow`, `views/profile/PersonRow`, `controllers/MessagesProvider`, `controllers/SocialProvider` |
-| **Profil saya** (tab) | `app/(tabs)/profile.tsx` | `views/profile/ProfileHeader`, `views/profile/ProfileTabs`, `views/feed/PostGrid`, `utils/profileStrength` |
+| **Profil saya** (tab) | `app/(tabs)/profile.tsx` | `views/profile/ProfileHeader`, `views/profile/ProfileTabs`, `views/feed/PostGrid` (tab Karya), `views/profile/PostList` (tab Post), `utils/profileStrength` |
 | Edit profil | `app/edit-profile.tsx` | `services/posts.service` (upload foto), `models/profession` |
-| Profil orang lain | `app/user/[id]/index.tsx` | `views/profile/ProfileHeader`, `views/profile/FollowButton`, `controllers/useConnections` |
+| Profil orang lain | `app/user/[id]/index.tsx` | `views/profile/ProfileHeader`, `views/profile/FollowButton`, `views/feed/PostGrid` (tab Karya), `views/profile/PostList` (tab Post), `controllers/useConnections` |
 | Pengikut & Koneksi | `app/user/[id]/connections.tsx` | `views/profile/PersonRow`, `controllers/useConnections` |
 | Detail postingan | `app/post/[id]/index.tsx` | `views/feed/PostCard` |
 | Komentar | `app/post/[id]/comments.tsx` | `views/feed/CommentItem`, `controllers/useComments` |

@@ -1,5 +1,5 @@
 // My profile, LinkedIn-style: cover + photo, name/headline/role, Karya · Pengikut · Koneksi,
-// Edit/Bagikan buttons, a profile-strength card, then a Karya grid and a Tentang tab.
+// Edit/Bagikan buttons, a profile-strength card, then Karya (grid, default) · Post (list) · About tabs.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
@@ -17,6 +17,7 @@ import { profileStrength } from '@/utils/profileStrength';
 import { focusRing } from '@/views/auth/focus';
 import { PostGrid } from '@/views/feed/PostGrid';
 import { ProfileHeader } from '@/views/profile/ProfileHeader';
+import { PostList } from '@/views/profile/PostList';
 import { InfoRow, ProfileTabs, type ProfileTab } from '@/views/profile/ProfileTabs';
 import { shareProfile } from '@/views/profile/shareProfile';
 import { AppText } from '@/views/ui/AppText';
@@ -47,7 +48,7 @@ export default function ProfileScreen() {
   const { profile, user, signOut, restartOnboarding, pending } = useAuthContext();
   const { posts } = usePosts();
   const { followers, connections } = useSocial();
-  const [tab, setTab] = useState<ProfileTab>('posts');
+  const [tab, setTab] = useState<ProfileTab>('karya');
   const [menuOpen, setMenuOpen] = useState(false);
   const toast = useToast();
   if (!profile || !user) return null; // the root layout only shows tabs once the profile is loaded
@@ -58,6 +59,8 @@ export default function ProfileScreen() {
   const level = experienceLabel(profile.experience_level);
   const joined = new Date(profile.created_at).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   const myPosts = posts.filter((p) => p.author_id === user.id);
+  const myKarya = myPosts.filter((p) => p.kind === 'karya');
+  const myPostsOnly = myPosts.filter((p) => p.kind === 'post');
   const strength = profileStrength(profile);
   const openConnections = (list: 'followers' | 'connections') =>
     router.push({ pathname: '/user/[id]/connections', params: { id: user.id, tab: list } });
@@ -97,7 +100,7 @@ export default function ProfileScreen() {
           headline={profile.headline}
           openToWork={profile.open_to_work}
           stats={[
-            { label: 'Karya', value: myPosts.length },
+            { label: 'Karya', value: myKarya.length },
             { label: 'Pengikut', value: followers.length, onPress: () => openConnections('followers') },
             { label: 'Koneksi', value: connections.length, onPress: () => openConnections('connections') },
           ]}
@@ -134,20 +137,35 @@ export default function ProfileScreen() {
 
         <ProfileTabs value={tab} onChange={setTab} />
 
-        {tab === 'posts' &&
-          (myPosts.length > 0 ? (
+        {tab === 'post' &&
+          (myPostsOnly.length > 0 ? (
+            <PostList posts={myPostsOnly} />
+          ) : (
+            <EmptyState
+              icon="chatbubble-outline"
+              color={profession.color}
+              title="Belum ada post"
+              message="Post kamu akan muncul di sini."
+              actionLabel="Unggah"
+              actionIcon="cloud-upload-outline"
+              onAction={() => router.push({ pathname: '/upload', params: { kind: 'post' } })}
+            />
+          ))}
+
+        {tab === 'karya' &&
+          (myKarya.length > 0 ? (
             <View style={styles.bleed}>
-              <PostGrid posts={myPosts} gap={2} rounded={false} />
+              <PostGrid posts={myKarya} gap={2} rounded={false} />
             </View>
           ) : (
             <EmptyState
               icon={profession.showcase.icon}
               color={profession.color}
-              title="Belum ada postingan"
+              title="Belum ada karya"
               message={`${profession.showcase.noun[0].toUpperCase()}${profession.showcase.noun.slice(1)} kamu akan muncul di sini setelah diunggah.`}
               actionLabel="Unggah"
               actionIcon="cloud-upload-outline"
-              onAction={() => router.push('/upload')}
+              onAction={() => router.push({ pathname: '/upload', params: { kind: 'karya' } })}
             />
           ))}
 

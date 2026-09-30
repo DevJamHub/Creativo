@@ -2,7 +2,7 @@
 // Images go to the public "posts" storage bucket under <author_id>/, rows to public.posts.
 // All errors come back as friendly Indonesian messages; details are only logged in development.
 
-import { MAX_POST_IMAGES, type Comment, type LocalImage, type Post } from '@/models/post';
+import { MAX_POST_IMAGES, type Comment, type LocalImage, type Post, type PostKind } from '@/models/post';
 import type { PublicProfile } from '@/models/profile';
 import { supabase } from '@/services/supabase';
 
@@ -97,7 +97,7 @@ async function uploadImage(authorId: string, image: LocalImage, index: number | 
   return path;
 }
 
-export async function createPost(authorId: string, images: LocalImage[], caption: string): Promise<Result<Post>> {
+export async function createPost(authorId: string, images: LocalImage[], caption: string, kind: PostKind): Promise<Result<Post>> {
   const uploaded: string[] = [];
   try {
     for (const [i, image] of images.slice(0, MAX_POST_IMAGES).entries()) {
@@ -110,7 +110,7 @@ export async function createPost(authorId: string, images: LocalImage[], caption
 
   const { data, error } = await supabase
     .from('posts')
-    .insert({ author_id: authorId, image_paths: uploaded, caption: caption.trim() })
+    .insert({ author_id: authorId, image_paths: uploaded, caption: caption.trim(), kind })
     .select()
     .single<PostRow>();
   if (error) {

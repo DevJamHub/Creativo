@@ -5,7 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
-import type { LocalImage, Post } from '@/models/post';
+import type { LocalImage, Post, PostKind } from '@/models/post';
 import type { PublicProfile } from '@/models/profile';
 import * as postsApi from '@/services/posts.service';
 
@@ -67,9 +67,9 @@ function usePostsStore() {
   }, [load]);
 
   const create = useCallback(
-    async (images: LocalImage[], caption: string) => {
+    async (images: LocalImage[], caption: string, kind: PostKind) => {
       if (!userId) return { error: 'Sesi kamu telah berakhir. Silakan masuk kembali.' };
-      const result = await postsApi.createPost(userId, images, caption);
+      const result = await postsApi.createPost(userId, images, caption, kind);
       if (result.error !== null) return { error: result.error };
       setPosts((cur) => [result.data, ...cur]);
       // A first post can come before our own card is in the list (e.g. right after onboarding)

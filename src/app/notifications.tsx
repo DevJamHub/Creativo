@@ -64,10 +64,8 @@ export default function NotificationsScreen() {
     const thumb = n.post?.image_paths[0];
 
     return (
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => open(n)}
-        style={(state) => [styles.row, isNew(n) && styles.rowNew, state.pressed && styles.pressed, focusRing(state)]}>
+      // Avatar, body and follow button are siblings: on web a Pressable is a <button>, which can't nest
+      <View style={[styles.row, isNew(n) && styles.rowNew]}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Buka profil ${name}`} onPress={() => openProfile(n.actor_id)} style={focusRing}>
           <Avatar uri={actor?.avatar_url} name={name} size={44} />
           <View style={[styles.badge, { backgroundColor: colors[badge.color] }]}>
@@ -75,24 +73,28 @@ export default function NotificationsScreen() {
           </View>
         </Pressable>
 
-        <AppText variant="body" color={colors.text} style={styles.flex} numberOfLines={3}>
-          <AppText variant="bodyStrong" color={colors.ink}>
-            {name}
-          </AppText>{' '}
-          {n.type === 'follow' && relation(n.actor_id) === 'connected'
-            ? 'mengikutimu. Kalian sekarang terhubung.'
-            : describeNotification(n)}{' '}
-          <AppText variant="caption" color={colors.textSubtle}>
-            {timeAgo(n.created_at)}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => open(n)}
+          style={(state) => [styles.body, state.pressed && styles.pressed, focusRing(state)]}>
+          <AppText variant="body" color={colors.text} style={styles.flex} numberOfLines={3}>
+            <AppText variant="bodyStrong" color={colors.ink}>
+              {name}
+            </AppText>{' '}
+            {n.type === 'follow' && relation(n.actor_id) === 'connected'
+              ? 'mengikutimu. Kalian sekarang terhubung.'
+              : describeNotification(n)}{' '}
+            <AppText variant="caption" color={colors.textSubtle}>
+              {timeAgo(n.created_at)}
+            </AppText>
           </AppText>
-        </AppText>
+          {n.type !== 'follow' && thumb ? (
+            <Image source={{ uri: imageUrl(thumb) }} style={styles.thumb} contentFit="cover" accessibilityLabel="Postingan terkait" />
+          ) : null}
+        </Pressable>
 
-        {n.type === 'follow' ? (
-          <FollowButton userId={n.actor_id} />
-        ) : thumb ? (
-          <Image source={{ uri: imageUrl(thumb) }} style={styles.thumb} contentFit="cover" accessibilityLabel="Postingan terkait" />
-        ) : null}
-      </Pressable>
+        {n.type === 'follow' && <FollowButton userId={n.actor_id} />}
+      </View>
     );
   };
 
@@ -152,6 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   rowNew: { backgroundColor: colors.primarySoft },
+  body: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   pressed: { opacity: 0.7 },
   badge: {
     position: 'absolute',

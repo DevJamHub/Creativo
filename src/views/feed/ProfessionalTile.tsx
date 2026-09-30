@@ -23,33 +23,37 @@ export function ProfessionalTile({ pro, postCount }: ProfessionalTileProps) {
   const name = pro.full_name || 'Pengguna Creativo';
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${name}, ${profession.label}, ${postCount} karya`}
-      onPress={() => openProfile(pro.id)}
-      style={(state) => [styles.tile, state.pressed && styles.pressed, focusRing(state)]}>
-      <View style={[styles.photo, pro.open_to_work && styles.photoOpen]}>
-        <Avatar uri={pro.avatar_url} name={name} size={48} />
-      </View>
-      <AppText variant="bodyStrong" color={colors.ink} numberOfLines={1}>
-        {name}
-      </AppText>
-      <View style={styles.role}>
-        <Ionicons name={profession.icon} size={12} color={profession.color} />
-        <AppText variant="small" color={colors.textMuted} numberOfLines={1} style={styles.flex}>
-          {profession.label}
+    // The follow button sits beside the pressable area, not inside it: on web a Pressable is a
+    // <button>, and buttons can't nest
+    <View style={styles.tile}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${name}, ${profession.label}, ${postCount} karya`}
+        onPress={() => openProfile(pro.id)}
+        style={(state) => [styles.info, state.pressed && styles.pressed, focusRing(state)]}>
+        <View style={[styles.photo, pro.open_to_work && styles.photoOpen]}>
+          <Avatar uri={pro.avatar_url} name={name} size={48} />
+        </View>
+        <AppText variant="bodyStrong" color={colors.ink} numberOfLines={1}>
+          {name}
         </AppText>
-      </View>
-      <AppText variant="caption" color={colors.textMuted} numberOfLines={2} style={styles.headline}>
-        {pro.headline || profession.tagline}
-      </AppText>
-      <AppText variant="mono" color={pro.open_to_work ? colors.success : colors.textSubtle} style={styles.count}>
-        {postCount} karya{pro.open_to_work ? ' · siap direkrut' : ''}
-      </AppText>
+        <View style={styles.role}>
+          <Ionicons name={profession.icon} size={12} color={profession.color} />
+          <AppText variant="small" color={colors.textMuted} numberOfLines={1} style={styles.flex}>
+            {profession.label}
+          </AppText>
+        </View>
+        <AppText variant="caption" color={colors.textMuted} numberOfLines={2} style={styles.headline}>
+          {pro.headline || profession.tagline}
+        </AppText>
+        <AppText variant="mono" color={pro.open_to_work ? colors.success : colors.textSubtle} style={styles.count}>
+          {postCount} karya{pro.open_to_work ? ' · siap direkrut' : ''}
+        </AppText>
+      </Pressable>
       <View style={styles.follow}>
         <FollowButton userId={pro.id} fullWidth />
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -64,6 +68,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  info: { gap: 4, borderRadius: radius.md },
   pressed: { opacity: 0.8 },
   role: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headline: { minHeight: 36 },

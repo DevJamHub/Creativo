@@ -43,7 +43,7 @@ src/
 ├── services/       Akses data ke Supabase (Auth, database, storage)
 │   ├── supabase.ts         client
 │   ├── auth.service.ts     login/daftar/OAuth/reset + simpan profil
-│   ├── posts.service.ts    postingan, unggah foto, suka, komentar
+│   ├── posts.service.ts    postingan, unggah foto, suka, komentar, cari profesional
 │   ├── social.service.ts   ikuti/berhenti, notifikasi + realtime
 │   └── messages.service.ts pesan langsung, inbox, tanda dibaca + realtime
 ├── controllers/    State dan aksi yang dipakai layar (React context + hooks)
@@ -52,7 +52,8 @@ src/
 │   ├── SocialProvider.tsx              yang kamu ikuti, pengikutmu, notifikasi
 │   ├── MessagesProvider.tsx / useChat.ts   inbox dan satu percakapan
 │   ├── useConnections.ts               pengikut/koneksi user mana pun + koneksi bersama
-│   └── useComments.ts                  komentar satu postingan: balas, suka, hapus
+│   ├── useComments.ts                  komentar satu postingan: balas, suka, hapus
+│   └── useProfessionalSearch.ts        pencarian profesional di Beranda (di database, 30 per halaman)
 ├── views/          Komponen tampilan yang bisa dipakai ulang
 │   ├── ui/          tombol, teks, chip, avatar, toast...
 │   ├── auth/        komponen layar masuk/daftar
@@ -74,4 +75,4 @@ Aturan alurnya: **app → controllers → services → Supabase**. `models` bole
 
 - Semua teks di aplikasi berbahasa Indonesia. Komentar kode tetap berbahasa Inggris.
 - Postingan disimpan di tabel `posts` dan foto di bucket storage publik `posts`, di folder `<user_id>/`.
-- Profil orang lain dibaca lewat fungsi `public_profiles()`, sehingga email tidak pernah terbuka ke user lain.
+- Profil orang lain dibaca lewat fungsi `public_profiles()`, sehingga email tidak pernah terbuka ke user lain. Pencarian di Beranda memakai `search_professionals()`, yang juga hanya mengembalikan kolom publik, menjangkau semua pengguna, dan dimuat per halaman.

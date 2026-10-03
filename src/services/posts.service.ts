@@ -3,6 +3,7 @@
 // All errors come back as friendly Indonesian messages; details are only logged in development.
 
 import { MAX_POST_IMAGES, type Comment, type LocalImage, type Post, type PostKind } from '@/models/post';
+import { professionIdsMatching } from '@/models/profession';
 import type { PublicProfile } from '@/models/profile';
 import { supabase } from '@/services/supabase';
 
@@ -79,6 +80,41 @@ export async function fetchPublicProfiles(): Promise<Result<PublicProfile[]>> {
   const { data, error } = await supabase.rpc('public_profiles');
   if (error) return failure('Gagal memuat daftar profesional.', error);
   return { data: (data as PublicProfile[] | null) ?? [], error: null };
+}
+
+/** How many professionals one search request returns (the database allows at most 50). */
+export const PROFESSIONALS_PAGE_SIZE = 30;
+
+export interface ProfessionalSearch {
+  /** Name, profession, specialization or headline */
+  query: string;
+  /** Only this profession id, or null for every field */
+  field: string | null;
+  /** Only people "Terbuka untuk peluang" */
+  openOnly: boolean;
+  /** 0-based page of PROFESSIONALS_PAGE_SIZE results */
+  page: number;
+}
+
+/** Search every onboarded professional in the database (search_professionals()), newest first. */
+export async function searchProfessionals(
+  search: ProfessionalSearch,
+): Promise<Result<{ items: PublicProfile[]; total: number }>> {
+  const query = search.query.trim();
+  const { data, error } = await supabase.rpc('search_professionals', {
+    q: query || null,
+    match_professions: query ? professionIdsMatching(query) : null,
+    field: search.field,
+    open_only: search.openOnly,
+    page_size: PROFESSIONALS_PAGE_SIZE,
+    page_offset: search.page * PROFESSIONALS_PAGE_SIZE,
+  });
+  if (error) return failure('Gagal mencari profesional. Periksa koneksi internet kamu.', error);
+  const rows = (data as (PublicProfile & { total_count: number })[] | null) ?? [];
+  return {
+    data: { items: rows.map(({ total_count: _total, ...profile }) => profile), total: Number(rows[0]?.total_count ?? 0) },
+    error: null,
+  };
 }
 
 /* ------------------------------------------------------------------ */

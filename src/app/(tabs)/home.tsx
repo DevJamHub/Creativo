@@ -18,6 +18,7 @@ import { colors, CONTENT_MAX_WIDTH, SCREEN_PADDING, spacing, TAB_BAR_SPACE } fro
 import { focusRing } from '@/views/auth/focus';
 import { PostGrid } from '@/views/feed/PostGrid';
 import { ProfessionalTile } from '@/views/feed/ProfessionalTile';
+import { ProfessionalRowSkeleton, WorksGridSkeleton } from '@/views/feed/ShowcaseSkeleton';
 import { AppText } from '@/views/ui/AppText';
 import { Avatar } from '@/views/ui/Avatar';
 import { Chip } from '@/views/ui/Chip';
@@ -135,7 +136,11 @@ export default function HomeScreen() {
         </ScrollView>
 
         {state === 'loading' ? (
-          <ActivityIndicator color={colors.primary} style={styles.loading} accessibilityLabel="Memuat etalase" />
+          // Grey shapes in the layout that is coming, instead of a lone spinner
+          <>
+            <ProfessionalRowSkeleton />
+            <WorksGridSkeleton />
+          </>
         ) : (
           <>
             {/* Professionals */}
@@ -144,7 +149,9 @@ export default function HomeScreen() {
                 title="Profesional"
                 icon="people-outline"
                 trailing={
-                  search.searching || search.firstLoad ? (
+                  // While the row below is a skeleton it already says "loading"; a small spinner only
+                  // shows when earlier results stay on screen during a new search
+                  search.firstLoad || (search.searching && pros.length === 0) ? null : search.searching ? (
                     <ActivityIndicator size="small" color={colors.textSubtle} accessibilityLabel="Mencari profesional" />
                   ) : (
                     <AppText variant="mono" color={colors.textSubtle}>
@@ -154,7 +161,7 @@ export default function HomeScreen() {
                 }
               />
               {search.firstLoad ? (
-                <ActivityIndicator color={colors.primary} style={styles.prosLoading} accessibilityLabel="Mencari profesional" />
+                <ProfessionalRowSkeleton />
               ) : search.error ? (
                 <EmptyState
                   boxed
@@ -184,7 +191,7 @@ export default function HomeScreen() {
                   }
                 />
               ) : search.searching ? (
-                <ActivityIndicator color={colors.primary} style={styles.prosLoading} accessibilityLabel="Mencari profesional" />
+                <ProfessionalRowSkeleton />
               ) : (
                 <EmptyState boxed icon="search-outline" title="Tidak ada yang cocok" message="Coba kata kunci lain atau pilih bidang yang berbeda." />
               )}
@@ -230,6 +237,4 @@ const styles = StyleSheet.create({
   // Previous results while a new search is on its way
   stale: { opacity: 0.5 },
   more: { alignSelf: 'center', marginHorizontal: spacing.md },
-  prosLoading: { marginVertical: spacing.lg },
-  loading: { marginTop: spacing.xl },
 });

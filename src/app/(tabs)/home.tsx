@@ -1,21 +1,24 @@
 // Beranda: a showcase seen from a client's point of view.
 // Browse professionals by field, search by name or skill, filter to people open to opportunities
 // (for recruiters), and look through their latest work.
+// The search runs in the database over every professional and loads 30 at a time (useProfessionalSearch).
 // Your own workspace (profile strength, stats) lives on the Profil tab.
 
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
 import { usePosts } from '@/controllers/PostsProvider';
 import { useSocial } from '@/controllers/SocialProvider';
-import { getProfession, professions } from '@/models/profession';
+import { useProfessionalSearch } from '@/controllers/useProfessionalSearch';
+import { professions } from '@/models/profession';
 import { colors, CONTENT_MAX_WIDTH, SCREEN_PADDING, spacing, TAB_BAR_SPACE } from '@/theme';
 import { focusRing } from '@/views/auth/focus';
 import { PostGrid } from '@/views/feed/PostGrid';
 import { ProfessionalTile } from '@/views/feed/ProfessionalTile';
+import { ProfessionalRowSkeleton, WorksGridSkeleton } from '@/views/feed/ShowcaseSkeleton';
 import { AppText } from '@/views/ui/AppText';
 import { Avatar } from '@/views/ui/Avatar';
 import { Chip } from '@/views/ui/Chip';
@@ -45,20 +48,12 @@ export default function HomeScreen() {
   const [query, setQuery] = useState('');
 
   const name = profile?.full_name || user?.email?.split('@')[0] || 'kamu';
-  const q = query.trim().toLowerCase();
 
-  // Professionals matching the filters and the search text (name, profession, specializations, headline)
-  const pros = useMemo(
-    () =>
-      Object.values(profiles).filter((p) => {
-        if (field !== ALL && p.profession !== field) return false;
-        if (hiringOnly && !p.open_to_work) return false;
-        if (!q) return true;
-        const haystack = [p.full_name, getProfession(p.profession).label, p.headline, ...p.specializations];
-        return haystack.some((text) => text?.toLowerCase().includes(q));
-      }),
-    [profiles, field, hiringOnly, q],
-  );
+  // Professionals matching the filters and the search text (name, profession, specializations, headline),
+  // searched in the database page by page
+  const search = useProfessionalSearch({ query, field: field === ALL ? null : field, openOnly: hiringOnly });
+  const pros = search.items;
+  const filtering = field !== ALL || hiringOnly || query.trim() !== '';
 
   const postCount = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -66,12 +61,19 @@ export default function HomeScreen() {
     return counts;
   }, [posts]);
 
+  // Without filters every recent work shows; with filters, the work of the professionals found so far
   const works = useMemo(() => {
+    if (!filtering) return posts;
     const allowed = new Set(pros.map((p) => p.id));
     return posts.filter((p) => allowed.has(p.author_id));
-  }, [posts, pros]);
+  }, [posts, pros, filtering]);
 
   const pickField = (id: string) => setField(id);
+
+  const refreshAll = () => {
+    refresh();
+    search.reload();
+  };
 
   return (
     <View style={[styles.flex, { paddingTop: insets.top }]}>
@@ -79,7 +81,7 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_SPACE + insets.bottom }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshAll} tintColor={colors.primary} />}>
         {/* Greeting */}
         <View style={styles.topBar}>
           <Pressable accessibilityRole="button" accessibilityLabel="Buka profilmu" onPress={() => router.navigate('/profile')} style={focusRing}>
@@ -134,7 +136,11 @@ export default function HomeScreen() {
         </ScrollView>
 
         {state === 'loading' ? (
-          <ActivityIndicator color={colors.primary} style={styles.loading} accessibilityLabel="Memuat etalase" />
+          // Grey shapes in the layout that is coming, instead of a lone spinner
+          <>
+            <ProfessionalRowSkeleton />
+            <WorksGridSkeleton />
+          </>
         ) : (
           <>
             {/* Professionals */}
@@ -143,21 +149,49 @@ export default function HomeScreen() {
                 title="Profesional"
                 icon="people-outline"
                 trailing={
-                  <AppText variant="mono" color={colors.textSubtle}>
-                    {pros.length}
-                  </AppText>
+                  // While the row below is a skeleton it already says "loading"; a small spinner only
+                  // shows when earlier results stay on screen during a new search
+                  search.firstLoad || (search.searching && pros.length === 0) ? null : search.searching ? (
+                    <ActivityIndicator size="small" color={colors.textSubtle} accessibilityLabel="Mencari profesional" />
+                  ) : (
+                    <AppText variant="mono" color={colors.textSubtle}>
+                      {search.total}
+                    </AppText>
+                  )
                 }
               />
-              {pros.length > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pros} style={styles.bleed}>
-                  {pros.map((p) => (
-                    <ProfessionalTile
-                      key={p.id}
-                      pro={p}
-                      postCount={postCount[p.id] ?? 0}
-                    />
-                  ))}
-                </ScrollView>
+              {search.firstLoad ? (
+                <ProfessionalRowSkeleton />
+              ) : search.error ? (
+                <EmptyState
+                  boxed
+                  icon="cloud-offline-outline"
+                  title="Profesional tidak bisa dimuat"
+                  message={search.error}
+                  actionLabel="Coba lagi"
+                  actionIcon="refresh"
+                  onAction={search.reload}
+                />
+              ) : pros.length > 0 ? (
+                // Scrolling near the end loads the next 30; the previous results stay (dimmed) while a new search runs
+                <FlatList
+                  horizontal
+                  data={pros}
+                  keyExtractor={(p) => p.id}
+                  renderItem={({ item }) => <ProfessionalTile pro={item} postCount={postCount[item.id] ?? 0} />}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.pros}
+                  style={[styles.bleed, search.searching && styles.stale]}
+                  onEndReached={search.loadMore}
+                  onEndReachedThreshold={0.5}
+                  ListFooterComponent={
+                    search.loadingMore ? (
+                      <ActivityIndicator color={colors.primary} style={styles.more} accessibilityLabel="Memuat profesional lainnya" />
+                    ) : null
+                  }
+                />
+              ) : search.searching ? (
+                <ProfessionalRowSkeleton />
               ) : (
                 <EmptyState boxed icon="search-outline" title="Tidak ada yang cocok" message="Coba kata kunci lain atau pilih bidang yang berbeda." />
               )}
@@ -200,5 +234,7 @@ const styles = StyleSheet.create({
   bleed: { marginHorizontal: -SCREEN_PADDING },
   chips: { gap: spacing.xs, paddingHorizontal: SCREEN_PADDING },
   pros: { gap: spacing.sm, paddingHorizontal: SCREEN_PADDING },
-  loading: { marginTop: spacing.xl },
+  // Previous results while a new search is on its way
+  stale: { opacity: 0.5 },
+  more: { alignSelf: 'center', marginHorizontal: spacing.md },
 });

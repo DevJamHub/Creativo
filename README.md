@@ -55,9 +55,9 @@ src/
 │   ├── useComments.ts                  komentar satu postingan: balas, suka, hapus
 │   └── useProfessionalSearch.ts        pencarian profesional di Beranda (di database, 30 per halaman)
 ├── views/          Komponen tampilan yang bisa dipakai ulang
-│   ├── ui/          tombol, teks, chip, avatar, toast...
+│   ├── ui/          tombol, teks, chip, avatar, toast, skeleton (kerangka saat memuat)...
 │   ├── auth/        komponen layar masuk/daftar
-│   ├── feed/        PostCard, PostGrid, ImageCarousel, CommentItem, ProfessionalTile
+│   ├── feed/        PostCard, PostGrid, ImageCarousel, CommentItem, ProfessionalTile, ShowcaseSkeleton
 │   ├── profile/     ProfileHeader, ProfileTabs, PersonRow, FollowButton, shareProfile
 │   ├── messages/    ConversationRow
 │   ├── navigation/  TabBar

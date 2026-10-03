@@ -166,3 +166,10 @@ export function getProfession(id: string | null | undefined): Profession {
 export function experienceLabel(level: string | null | undefined): string | null {
   return experienceLevels.find((l) => l.id === level)?.label ?? null;
 }
+
+/** Ids of professions whose label contains the search text ("desainer" → uiux, graphic). Labels only live here, not in the database. */
+export function professionIdsMatching(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return professions.filter((p) => p.label.toLowerCase().includes(q)).map((p) => p.id);
+}

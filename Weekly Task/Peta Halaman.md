@@ -31,7 +31,7 @@ Semua halaman juga memakai `theme/` (warna, huruf) dan `views/ui/` (tombol, teks
 | Halaman | File halaman | File pendukung utama |
 |---|---|---|
 | Onboarding | `app/onboarding.tsx` | `views/onboarding/ProfessionTile`, `models/profession` |
-| **Beranda** (tab) | `app/(tabs)/home.tsx` | `views/feed/ProfessionalTile`, `views/feed/PostGrid`, `controllers/PostsProvider`, `controllers/SocialProvider` |
+| **Beranda** (tab) | `app/(tabs)/home.tsx` | `views/feed/ProfessionalTile`, `views/feed/PostGrid`, `controllers/useProfessionalSearch`, `controllers/PostsProvider`, `controllers/SocialProvider` |
 | **Feed** (tab) | `app/(tabs)/feed.tsx` | `views/feed/PostCard`, `views/feed/ImageCarousel`, `controllers/PostsProvider` |
 | **Upload** (tombol +) | `app/upload.tsx` | `controllers/PostsProvider`, `models/post`, `views/ui/SegmentedControl` (pilih Karya/Post) |
 | **Teman** (tab) | `app/(tabs)/network.tsx` | `views/messages/ConversationRow`, `views/profile/PersonRow`, `controllers/MessagesProvider`, `controllers/SocialProvider` |

@@ -24,6 +24,7 @@ Cek sebelum commit:
 ```bash
 npx tsc --noEmit
 npx expo lint
+npm test          # unit test (jest-expo), file di src/**/__tests__/
 ```
 
 ## Struktur (MVC)

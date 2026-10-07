@@ -41,7 +41,13 @@
           "microphonePermission": false
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Creativo memakai Face ID untuk membuka aplikasi saat kunci biometrik aktif."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

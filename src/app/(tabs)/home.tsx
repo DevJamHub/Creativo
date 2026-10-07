@@ -20,6 +20,7 @@ import { AppText } from '@/views/ui/AppText';
 import { Avatar } from '@/views/ui/Avatar';
 import { Chip } from '@/views/ui/Chip';
 import { EmptyState } from '@/views/ui/EmptyState';
+import { ErrorState } from '@/views/ui/ErrorState';
 import { IconButton } from '@/views/ui/IconButton';
 import { SearchBar } from '@/views/ui/SearchBar';
 import { SectionTitle } from '@/views/ui/SectionTitle';
@@ -37,7 +38,7 @@ const ALL = 'all';
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { profile, user } = useAuthContext();
-  const { posts, profiles, state, refreshing, refresh } = usePosts();
+  const { posts, profiles, state, error, refreshing, refresh } = usePosts();
   const { unreadCount } = useSocial();
 
   const [field, setField] = useState<string>(ALL);
@@ -135,6 +136,8 @@ export default function HomeScreen() {
 
         {state === 'loading' ? (
           <ActivityIndicator color={colors.primary} style={styles.loading} accessibilityLabel="Memuat etalase" />
+        ) : state === 'error' ? (
+          <ErrorState boxed title="Gagal memuat etalase" message={error} onRetry={refresh} retrying={refreshing} />
         ) : (
           <>
             {/* Professionals */}

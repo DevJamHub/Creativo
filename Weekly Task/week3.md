@@ -1,142 +1,255 @@
-# Week 3
+# Week 3: Authentication + Local Data Security
 
-## Tugas
+> **Konsep utama:** UI yang baik → **UI yang aman**.
+> Creativo tidak hanya tampil bagus, tapi juga **mengenali penggunanya** (autentikasi) dan **melindungi data rahasia** di HP (secure storage).
 
 | No | Tugas | Status |
 |---|---|---|
-| 1 | Tambahkan fitur autentikasi sesuai tema | ✅ Selesai |
-| 2 | Terapkan local storage dan secure storage | ✅ Selesai |
+| Task 01 | Build the authentication flow (autentikasi sesuai tema) | ✅ |
+| Task 02 | Secure the local data (local storage & secure storage) | ✅ |
+| Task 03 | Validate the security (uji keamanan) | ✅ 15 test lolos |
 
 ---
 
-## 1. Tambahkan fitur autentikasi sesuai tema
+## Task 01: Alur Autentikasi
 
-Semua halaman autentikasi memakai tema **Notion + Claude**, sama seperti bagian aplikasi lainnya:
+### Alurnya
 
-- **Latar** krem seperti kertas (`#FAF9F5`) dengan kartu putih bergaris tipis.
-- **Warna utama** oranye terakota (`#D97757`) untuk tombol dan tautan.
-- **Judul** memakai huruf serif, dan **detail kecil** memakai huruf monospace.
-- **Pesan error** berwarna merah lembut, dan tampilan fokus seragam untuk keyboard.
-- Semua warna, huruf, dan jarak diambil dari satu file tema (`src/theme/index.ts`), tanpa warna yang ditulis manual. Satu-satunya pengecualian adalah logo Google, yang wajib memakai warna aslinya.
+```
+Buka aplikasi → Daftar / Masuk → Validasi input → Cek ke server (Supabase) → Berhasil → Beranda
+                                       │                    │
+                                  input salah?         email/sandi salah?
+                                       ▼                    ▼
+                               pesan validasi        "Email atau kata sandi salah."
+```
 
 ### Halaman
 
 | Halaman | File |
 |---|---|
 | Sambutan | `src/app/(auth)/welcome.tsx` |
-| Masuk | `src/app/(auth)/login.tsx` |
-| Daftar | `src/app/(auth)/signup.tsx` |
-| Lupa kata sandi | `src/app/(auth)/forgot-password.tsx` |
-| Atur ulang kata sandi | `src/app/reset-password.tsx` |
-| Callback login (Google/Apple/email) | `src/app/auth/callback.tsx` |
+| **Daftar** (register) | `src/app/(auth)/signup.tsx` |
+| **Masuk** (login) | `src/app/(auth)/login.tsx` |
+| Lupa & atur ulang kata sandi | `src/app/(auth)/forgot-password.tsx`, `src/app/reset-password.tsx` |
+| Masuk dengan Google/Apple | `src/app/auth/callback.tsx` |
+| **🆕 Layar kunci biometrik** | `src/views/auth/BiometricLockScreen.tsx` |
 
-### Komponen pendukung
+Semua halaman memakai **tema Creativo**: latar krem, tombol oranye terakota, dan judul serif. Warnanya diambil dari `src/theme/index.ts`.
 
-| File | Fungsinya |
+### Checklist "Hal yang perlu diperhatikan" (slide Task 01)
+
+| Poin di slide | Di Creativo |
 |---|---|
-| `src/views/auth/AuthScreen.tsx` | Kerangka halaman auth: tombol kembali, judul, scroll yang menyesuaikan keyboard, dan kartu di tengah pada layar lebar |
-| `src/views/auth/AuthInput.tsx` | Kolom isian (email, kata sandi) |
-| `src/views/auth/SubmitButton.tsx` | Tombol utama berwarna terakota |
-| `src/views/auth/SocialButtons.tsx`, `SocialButton.tsx` | Tombol masuk dengan Google dan Apple |
-| `src/views/auth/ErrorBanner.tsx` | Kotak pesan error |
-| `src/views/auth/OrDivider.tsx` | Pemisah "atau" |
-| `src/views/auth/focus.ts` | Garis fokus untuk navigasi keyboard |
-| `src/views/brand/Logo.tsx` | Logo Creativo |
-| `src/theme/index.ts` | Sumber semua warna, huruf, dan jarak |
+| Input memiliki label yang jelas | ✅ Setiap kolom punya label ("Email", "Kata sandi") yang juga dibaca screen reader (`AuthInput.tsx`) |
+| Password tidak ditampilkan terbuka | ✅ Kata sandi tersembunyi (●●●), dengan tombol 👁 untuk menampilkannya |
+| Validasi input dilakukan | ✅ Email kosong atau salah format dan kata sandi kosong ditolak **sebelum** dikirim ke server (`src/utils/validation.ts`) |
+| Error message jelas | ✅ Pesan dalam Bahasa Indonesia, misalnya "Email wajib diisi." |
+| Login berhasil → masuk aplikasi | ✅ Langsung ke Beranda (atau onboarding untuk akun baru) |
+| Login gagal → pengguna dapat feedback | ✅ "Email atau kata sandi salah." |
 
-### Alur
+### 🆕 Tambahan sesuai PDF
 
-```
-Sambutan → Masuk / Daftar → (Lupa kata sandi → email → Atur ulang kata sandi)
-         → Google / Apple → Callback → Onboarding (akun baru) → Beranda
-```
+**1. Masuk dengan biometrik (sidik jari / Face ID)**, seperti tombol "Masuk dengan Biometrik" di mockup PDF.
+- Aktifkan lewat **Profil → ☰ → "Kunci dengan Sidik jari/Face ID"**. HP akan meminta scan dulu untuk memastikan.
+- Setelah aktif, **setiap kali aplikasi dibuka** (atau kembali setelah ditinggal lebih dari 1 menit), muncul layar **"Creativo terkunci"**. Aplikasi baru terbuka setelah sidik jari atau wajah cocok.
+- Kalau scan gagal terus, ada tombol **"Keluar dan masuk dengan kata sandi"**.
+- Kunci ini milik akun yang mengaktifkannya. Kalau akun lain masuk di HP yang sama, kunci tidak berlaku untuknya.
+- File: `src/controllers/BiometricProvider.tsx` dan `src/views/auth/BiometricLockScreen.tsx`.
+- Hanya di Android/iOS. Face ID di iPhone butuh *development build*, karena Expo Go tidak mendukung Face ID. Sidik jari di Android bisa dicoba di Expo Go.
 
-Logika login ada di `src/controllers/AuthProvider.tsx` → `src/services/auth.service.ts` → Supabase Auth.
+**2. Konfirmasi sebelum logout**, seperti dialog "Apakah Anda yakin ingin keluar?" di PDF.
+- Profil → ☰ → Keluar memunculkan **"Keluar dari Creativo?"** dengan tombol Batal dan Keluar.
+- File: `src/views/auth/confirmSignOut.ts`.
 
 ---
 
-## 2. Terapkan local storage dan secure storage
+## Task 02: Mengamankan Data Lokal
 
-> **💡 Inti yang perlu dijelaskan**
-> Creativo menyimpan data di perangkat dengan **dua cara**, sesuai tingkat kerahasiaannya:
-> - **Local storage** untuk data **biasa** (preferensi tampilan). Disimpan apa adanya, cepat dibaca.
-> - **Secure storage** untuk data **rahasia** (token login). Disimpan **terenkripsi**, dan kuncinya ada di brankas perangkat (iOS Keychain / Android Keystore).
+> **💡 Intinya:** data di HP dibagi dua. **Data biasa** disimpan apa adanya. **Data rahasia** harus dikunci.
 
-### Status sebelum dan sesudah
+### Data apa yang biasa dan apa yang rahasia?
 
-| | Sebelum | Sesudah |
+| 🟢 Data biasa (tidak sensitif) | 🔒 Data sensitif (perlu dilindungi) |
+|---|---|
+| Tab Feed terakhir (Untukmu / Diikuti / Bidangku) | **Token login** (bukti kamu sudah masuk) |
+| Pengaturan kunci biometrik (akun mana yang mengaktifkan) | **Sesi login** (data akun yang sedang masuk) |
+| | **Kata sandi**: ❌ tidak pernah disimpan di HP sama sekali |
+
+### Disimpan di mana?
+
+| | 🟢 LOCAL STORAGE | 🔒 SECURE STORAGE |
 |---|---|---|
-| Local storage | ✅ Sudah ada, tapi hanya dipakai untuk sesi login | ✅ Dipakai untuk preferensi (tab Feed terakhir) |
-| Secure storage | ❌ **Belum ada**, token login tersimpan sebagai teks biasa | ✅ **Dibuat**: token login dienkripsi AES-256 |
+| **Untuk** | Data biasa | Data rahasia |
+| **Nama di kode** | `localStore` | `secureSessionStorage` |
+| **Tujuan akhir** | Penyimpanan biasa di HP (AsyncStorage) | **Brankas HP**: iPhone Keychain / Android Keystore (lewat `expo-secure-store`) |
+| **Dikunci/dienkripsi?** | Tidak | **Ya, AES-256** |
+| **Yang memakai** | `feed.tsx` (tab terakhir), `BiometricProvider.tsx` (pengaturan kunci) | `supabase.ts` (otomatis saat login/logout) |
 
-### Semua kode ada di satu file: `src/services/storage.ts`
+Semua kode storage ada di **satu file**: `src/services/storage.ts`, dengan dua bagian berjudul **"1. LOCAL STORAGE"** dan **"2. SECURE STORAGE"**.
 
-File ini dibagi dua bagian yang diberi judul besar:
+### Cara kerja secure storage (versi sederhana)
 
-| Bagian | Nama di kode | Teknologi | Isinya |
-|---|---|---|---|
-| **1. LOCAL STORAGE** | `localStore` | AsyncStorage (HP) / `localStorage` (web) | Tab Feed terakhir (Untukmu · Diikuti · Bidangku) |
-| **2. SECURE STORAGE** | `secureSessionStorage` | `expo-secure-store` + enkripsi AES-256 (`aes-js`, `expo-crypto`) | Sesi login: *access token* dan *refresh token* |
-
----
-
-### 🟢 1. Local Storage
-
-> **Highlight:** dipakai untuk data yang **tidak berbahaya kalau terbaca orang lain**.
-
-- **Contoh di aplikasi:** buka tab **Feed**, pilih **Diikuti**, lalu tutup dan buka lagi aplikasinya. Feed langsung terbuka di tab **Diikuti**.
-- **Cara kerja:** nilai diubah ke JSON, lalu disimpan dengan kunci berawalan `creativo.` (misalnya `creativo.feedView`).
-- **Aman dari error:** kalau penyimpanan diblokir (misalnya mode privat di browser), aplikasi tetap jalan dengan nilai default.
-- **Dipakai di:** `src/app/(tabs)/feed.tsx`, lewat `localStore.get(...)` saat layar dibuka dan `localStore.set(...)` saat tab diganti.
-
-```ts
-localStore.set(localKeys.feedView, 'following');          // simpan
-const view = await localStore.get(localKeys.feedView, 'forYou'); // baca (default 'forYou')
-```
-
----
-
-### 🔒 2. Secure Storage
-
-> **Highlight:** token login itu seperti **kunci rumah**. Kalau dicuri, orang lain bisa masuk ke akun kita. Karena itu token **tidak boleh disimpan sebagai teks biasa**.
-
-**Masalah sebelumnya:** token login disimpan di AsyncStorage **tanpa enkripsi**. Siapa pun yang bisa membaca file aplikasi (misalnya HP yang di-root atau backup) bisa mengambil token itu.
-
-**Kenapa tidak langsung pakai SecureStore saja?** SecureStore (Keychain/Keystore) **bisa menolak data di atas ±2 KB**, sedangkan sesi Supabase lebih besar dari itu. Solusinya adalah pola resmi dari Supabase (*LargeSecureStore*):
+> Token login itu seperti **surat penting**. Suratnya **digembok** (dienkripsi), lalu **kunci gemboknya disimpan di brankas HP** (Keychain/Keystore). Tanpa kunci dari brankas, surat itu tidak bisa dibuka.
 
 ```
-                 ┌─────────────────────────────┐
-  Sesi login ──► │ Enkripsi AES-256            │
-  (token)        │ kunci acak 256-bit baru     │
-                 └──────┬───────────────┬──────┘
-                        │               │
-          kunci (64 karakter)     data terenkripsi (besar)
-                        ▼               ▼
-            🔒 SecureStore           AsyncStorage
-          (Keychain / Keystore)   (isinya tidak bisa dibaca)
+Login berhasil → token → 🔐 dienkripsi AES-256
+                              │
+             ┌────────────────┴────────────────┐
+             ▼                                 ▼
+   🔑 kunci → brankas HP             📄 token terenkripsi → AsyncStorage
+   (Keychain / Keystore)                (isinya acak, tidak bisa dibaca)
 ```
 
-- **Menyimpan:** buat kunci acak baru (`expo-crypto`), enkripsi sesi dengan AES-256, lalu simpan **kuncinya di SecureStore** dan **hasil enkripsinya di AsyncStorage**.
-- **Membaca:** ambil kunci dari SecureStore, lalu buka (dekripsi) data dari AsyncStorage.
-- **Keluar (logout):** keduanya dihapus.
-- **Tanpa kunci dari brankas perangkat, data di AsyncStorage hanyalah deretan angka acak.**
-- **Pengguna lama tidak ter-logout:** sesi lama yang masih berupa teks biasa otomatis dienkripsi saat pertama kali dibaca.
-- **Dipakai di:** `src/services/supabase.ts` → `storage: secureSessionStorage`. Supabase otomatis memakainya setiap kali menyimpan, membaca, atau menghapus sesi.
+> Kenapa tidak semuanya dimasukkan ke brankas? Brankas HP hanya muat data kecil (±2 KB), sedangkan sesi login lebih besar. Jadi yang masuk brankas cukup kuncinya. Ini pola resmi yang disarankan Supabase.
 
-> **Catatan web:** SecureStore tidak tersedia di browser, jadi di versi web sesi tetap disimpan di `localStorage` (standar Supabase untuk web). Enkripsi berlaku di **Android dan iOS**.
+### Checklist Task 02 (slide)
 
----
-
-### File yang diubah atau ditambah
-
-| File | Perubahan |
+| Poin di slide | Di Creativo |
 |---|---|
-| `src/services/storage.ts` | **Baru**: `localStore` dan `secureSessionStorage` |
-| `src/services/supabase.ts` | Sesi login disimpan lewat `secureSessionStorage` |
-| `src/app/(tabs)/feed.tsx` | Tab Feed terakhir diingat lewat `localStore` |
-| `app.json` | Plugin `expo-secure-store` |
-| `package.json` | Paket baru: `expo-secure-store`, `expo-crypto`, `aes-js` |
+| Tidak menyimpan password sebagai plaintext | ✅ Kata sandi **tidak disimpan sama sekali**; hanya dikirim ke server saat login |
+| Data sensitif tidak disimpan di storage biasa | ✅ Token disimpan terenkripsi; kuncinya di Keychain/Keystore |
+| Secure storage digunakan | ✅ `expo-secure-store` |
+| Data dapat dibaca kembali ketika diperlukan | ✅ Buka aplikasi lagi, kamu tetap login |
+| Logout menghapus session/data sensitif | ✅ Token terenkripsi dan kuncinya **sama-sama dihapus** |
 
-### Ringkasan satu kalimat untuk presentasi
+> **Catatan web:** brankas (SecureStore) tidak ada di browser, jadi di versi web token disimpan biasa di `localStorage`. Enkripsi berlaku di **Android dan iOS**.
 
-> **"Data biasa seperti preferensi tampilan disimpan di local storage, sedangkan token login dienkripsi AES-256 dan kuncinya disimpan di Keychain/Keystore lewat secure storage, jadi walaupun file aplikasinya dibaca orang lain, token tetap tidak bisa dipakai."**
+---
+
+## Task 03: Validasi Keamanan (Test, Don't Assume)
+
+Keamanan **diuji**, bukan hanya diasumsikan. Test otomatis ada di `src/__tests__/security.test.ts`, dengan skenario yang sama seperti **Security Test Matrix** di PDF.
+
+**Cara menjalankan:**
+```bash
+npm test
+```
+
+### Security Test Matrix
+
+| No | Skenario | Langkah | Hasil yang diharapkan | Hasil |
+|---|---|---|---|---|
+| 1 | Credential benar | Login dengan email dan kata sandi valid | **LOGIN_SUCCESS**: masuk ke aplikasi | ✅ Lolos |
+| 2 | Credential salah | Login dengan kata sandi salah | **LOGIN_FAILED**: "Email atau kata sandi salah." tanpa detail teknis | ✅ Lolos |
+| 3 | Input kosong | Login tanpa mengisi email/kata sandi | **VALIDATION_ERROR**: "Email wajib diisi." / "Kata sandi wajib diisi." | ✅ Lolos |
+| 4 | Logout | Tekan Keluar | **SESSION_CLEARED**: token dan kuncinya terhapus | ✅ Lolos |
+| 5 | Data sensitif | Cek isi penyimpanan setelah login | **PROTECTED**: token hanya berupa teks acak, kunci ada di brankas | ✅ Lolos |
+
+### Hasil `npm test`
+
+```
+PASS src/__tests__/security.test.ts
+  1. Credential benar → LOGIN_SUCCESS
+    ✓ masuk tanpa error
+  2. Credential salah → LOGIN_FAILED
+    ✓ ditolak dengan pesan yang jelas
+    ✓ tidak membocorkan informasi: tidak bilang email atau kata sandi yang salah, dan tanpa detail teknis
+  3. Input kosong → VALIDATION_ERROR
+    ✓ email kosong ditolak sebelum dikirim ke server
+    ✓ kata sandi kosong ditolak sebelum dikirim ke server
+    ✓ input yang benar lolos validasi
+  4. Logout → SESSION_CLEARED
+    ✓ memanggil logout Supabase
+    ✓ menghapus sesi dari AsyncStorage dan kuncinya dari SecureStore
+  5. Data sensitif → PROTECTED
+    ✓ token tidak tersimpan sebagai teks biasa
+    ✓ kunci enkripsi disimpan di SecureStore (Keychain / Keystore), bukan di AsyncStorage
+    ✓ data dapat dibaca kembali oleh aplikasi
+    ✓ tanpa kunci dari SecureStore, data tidak bisa dibuka
+    ✓ sesi lama yang masih teks biasa dienkripsi otomatis, tanpa membuat pengguna logout
+  Data biasa → local storage
+    ✓ preferensi disimpan dan dibaca kembali
+    ✓ memakai nilai default kalau belum ada yang disimpan
+
+Tests: 15 passed, 15 total
+```
+
+> Test otomatis ini memakai server tiruan (*mock*), jadi bisa jalan tanpa internet. Untuk demo, **ulangi skenario 1–4 langsung di aplikasi** (lihat bagian Demo di bawah).
+
+### Security Checklist (slide Task 03)
+
+| Poin | Status |
+|---|---|
+| Credential tervalidasi | ✅ Test 3 |
+| Password/PIN tidak ditampilkan | ✅ Kolom kata sandi tersembunyi (●●●) |
+| Invalid credential ditolak | ✅ Test 2 |
+| Session dapat diakhiri | ✅ Test 4 |
+| Data sensitif terlindungi | ✅ Test 5 |
+| Logout membersihkan session | ✅ Test 4 |
+| Error tidak membocorkan informasi sensitif | ✅ Test 2: tidak disebut mana yang salah (email atau kata sandi), dan tanpa kode error teknis |
+
+### Accessibility tetap terjaga (kaitan dengan Pekan 2)
+
+- Setiap kolom input punya label yang dibaca screen reader.
+- Tombol 👁 punya label "Tampilkan kata sandi" / "Sembunyikan kata sandi".
+- Pesan error diumumkan otomatis ke screen reader (`accessibilityLiveRegion`).
+- Layar kunci biometrik punya judul (header) dan tombol berlabel jelas.
+
+---
+
+## Demo: Show Your Secure App
+
+| Langkah | Yang dilakukan | Yang ditunjukkan |
+|---|---|---|
+| 1. Run | `npx expo start`, buka di Expo Go | Aplikasi berjalan |
+| 2. Register | Daftar akun baru | Validasi form (coba kosongkan kolom) |
+| 3. Login | Masuk dengan akun tadi | Masuk ke Beranda |
+| 4. Uji credential | Logout, lalu login dengan kata sandi salah | "Email atau kata sandi salah." |
+| 5. Biometrik | Profil → ☰ → Kunci dengan Sidik jari, lalu tutup dan buka lagi aplikasinya | Layar "Creativo terkunci" |
+| 6. Logout | Profil → ☰ → Keluar → konfirmasi | Kembali ke halaman sambutan, sesi terhapus |
+| 7. Explain | `npm test` | 15 test keamanan lolos |
+
+### Jawaban pertanyaan demo
+
+| Pertanyaan | Jawaban singkat |
+|---|---|
+| **Bagaimana proses login bekerja?** | Input divalidasi dulu di aplikasi. Kalau lolos, email dan kata sandi dikirim ke Supabase Auth. Kalau cocok, Supabase mengirim **token login**, lalu pengguna masuk ke Beranda. |
+| **Bagaimana aplikasi tahu credential valid atau tidak?** | Yang mengecek adalah **server Supabase**, bukan aplikasi. Aplikasi hanya menerima jawaban "valid" (dapat token) atau "tidak valid" (error `invalid_credentials`). |
+| **Data apa yang dianggap sensitif?** | Token login dan sesi login. Kata sandi juga sensitif, dan karena itu **tidak pernah disimpan** di HP. |
+| **Di mana data sensitif disimpan?** | Token dienkripsi AES-256. Kuncinya ada di **Keychain (iPhone) / Keystore (Android)** lewat `expo-secure-store`, dan hasil enkripsinya di AsyncStorage. |
+| **Apa yang terjadi saat logout?** | Muncul konfirmasi. Setelah dikonfirmasi, sesi di server diakhiri, lalu **token terenkripsi dan kuncinya dihapus** dari HP. Pengguna kembali ke halaman sambutan. |
+| **Bagaimana menguji keamanan aplikasi?** | Dengan **5 skenario test** (credential benar/salah, input kosong, logout, data sensitif) yang dijalankan otomatis lewat `npm test`, ditambah pengujian manual di aplikasi. |
+
+---
+
+## Sprint 02: Completion Checklist
+
+| No | Item | Status |
+|---|---|---|
+| 1 | React Native project berjalan | ✅ |
+| 2 | Expo Go dapat menjalankan aplikasi | ✅ |
+| 3 | Login dibuat | ✅ |
+| 4 | Register dibuat | ✅ |
+| 5 | Credential validation | ✅ |
+| 6 | Password/PIN validation | ✅ |
+| 7 | Authentication flow (register → login → home) | ✅ |
+| 8 | Secure storage (Expo) | ✅ |
+| 9 | Sensitive data identified | ✅ |
+| 10 | Sensitive data protected | ✅ |
+| 11 | Logout | ✅ (dengan konfirmasi) |
+| 12 | Session cleared | ✅ |
+| 13 | Security testing | ✅ 15 test |
+| 14 | Accessibility tetap diterapkan | ✅ |
+| 15 | Test pada perangkat Android/iOS | ⬜ Lakukan sendiri di HP |
+| 16 | Commit | ⬜ Commit manual |
+| 17 | Push | ⬜ Push manual |
+| 18 | Ready for next sprint | ⬜ Setelah 15–17 |
+
+---
+
+## File yang diubah atau ditambah minggu ini
+
+| File | Isi |
+|---|---|
+| `src/services/storage.ts` | 🆕 LocalStore dan SecureStore |
+| `src/services/supabase.ts` | Sesi login disimpan lewat secure storage |
+| `src/app/(tabs)/feed.tsx` | Tab Feed terakhir diingat (local storage) |
+| `src/controllers/BiometricProvider.tsx` | 🆕 Logika kunci biometrik |
+| `src/views/auth/BiometricLockScreen.tsx` | 🆕 Layar "Creativo terkunci" |
+| `src/views/auth/confirmSignOut.ts` | 🆕 Konfirmasi logout |
+| `src/app/_layout.tsx` | Memasang kunci biometrik di atas seluruh aplikasi |
+| `src/app/(tabs)/profile.tsx` | Menu kunci biometrik dan konfirmasi logout |
+| `src/utils/validation.ts`, `src/app/(auth)/login.tsx` | Validasi kata sandi dipindah ke satu tempat supaya bisa dites |
+| `src/__tests__/security.test.ts` | 🆕 15 test keamanan |
+| `app.json` | Plugin `expo-secure-store`, `expo-local-authentication` (izin Face ID) |
+| `package.json` | Paket: `expo-secure-store`, `expo-crypto`, `aes-js`, `expo-local-authentication`, `jest-expo`; script `npm test` |

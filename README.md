@@ -27,6 +27,10 @@ npx tsc --noEmit
 npx expo lint
 ```
 
+## Alur kerja tim
+
+Pekerjaan dicatat sebagai issue user story, dikerjakan di branch terpisah, lalu masuk ke `main` lewat pull request yang dicek CI (lint + typecheck) dan di-review teman. Aturan lengkapnya ada di **[CONTRIBUTING.md](CONTRIBUTING.md)**, dan daftar pekerjaannya ada di tab **Issues** (milestone `MVP` dan `Rilis 1`).
+
 ## Struktur (MVC)
 
 ```

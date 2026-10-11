@@ -8,12 +8,14 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
+import { useBiometric } from '@/controllers/BiometricProvider';
 import { usePosts } from '@/controllers/PostsProvider';
 import { useSocial } from '@/controllers/SocialProvider';
 import type { IconName } from '@/models/icon';
 import { experienceLabel, getProfession } from '@/models/profession';
 import { colors, CONTENT_MAX_WIDTH, radius, SCREEN_PADDING, spacing, TAB_BAR_SPACE } from '@/theme';
 import { profileStrength } from '@/utils/profileStrength';
+import { confirmSignOut } from '@/views/auth/confirmSignOut';
 import { focusRing } from '@/views/auth/focus';
 import { PostGrid } from '@/views/feed/PostGrid';
 import { ProfileHeader } from '@/views/profile/ProfileHeader';
@@ -48,6 +50,7 @@ export default function ProfileScreen() {
   const { profile, user, signOut, restartOnboarding, pending } = useAuthContext();
   const { posts } = usePosts();
   const { followers, connections } = useSocial();
+  const biometric = useBiometric();
   const [tab, setTab] = useState<ProfileTab>('karya');
   const [menuOpen, setMenuOpen] = useState(false);
   const toast = useToast();
@@ -133,6 +136,25 @@ export default function ProfileScreen() {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
           </Pressable>
+
+          {/* Remote job openings for this field, fetched live from a public jobs API */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/jobs')}
+            style={(state) => [styles.dashboard, state.pressed && styles.pressed, focusRing(state)]}>
+            <Ionicons name="briefcase-outline" size={20} color={colors.success} />
+            <View style={styles.flex}>
+              <AppText variant="bodyStrong" color={colors.ink}>
+                Lowongan remote
+              </AppText>
+              <AppText variant="caption" color={colors.textMuted}>
+                {profile.open_to_work
+                  ? `Kamu terbuka untuk peluang. Lihat lowongan ${profession.label} terbaru.`
+                  : `Lowongan terbaru untuk ${profession.label}, yang bisa dilamar dari Indonesia.`}
+              </AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+          </Pressable>
         </ProfileHeader>
 
         <ProfileTabs value={tab} onChange={setTab} />
@@ -206,13 +228,25 @@ export default function ProfileScreen() {
               restartOnboarding();
             }}
           />
+          {biometric.available && (
+            <MenuRow
+              icon={biometric.label === 'Face ID' ? 'scan-outline' : 'finger-print-outline'}
+              label={`Kunci dengan ${biometric.label}: ${biometric.enabled ? 'Aktif' : 'Nonaktif'}`}
+              onPress={async () => {
+                setMenuOpen(false);
+                const on = !biometric.enabled;
+                const result = await biometric.setEnabled(on);
+                toast.show(result.error ?? (on ? `Kunci ${biometric.label} aktif` : `Kunci ${biometric.label} dimatikan`));
+              }}
+            />
+          )}
           <MenuRow
             icon="log-out-outline"
             label={pending === 'signOut' ? 'Sedang keluar...' : 'Keluar'}
             danger
             onPress={() => {
               setMenuOpen(false);
-              signOut();
+              confirmSignOut(signOut);
             }}
           />
         </View>

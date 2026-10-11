@@ -16,6 +16,7 @@ import { colors, CONTENT_MAX_WIDTH, SCREEN_PADDING, spacing, TAB_BAR_SPACE } fro
 import { PostCard } from '@/views/feed/PostCard';
 import { AppText } from '@/views/ui/AppText';
 import { EmptyState } from '@/views/ui/EmptyState';
+import { ErrorState } from '@/views/ui/ErrorState';
 import { IconButton } from '@/views/ui/IconButton';
 import { SegmentedControl } from '@/views/ui/SegmentedControl';
 import { Toast, useToast } from '@/views/ui/Toast';
@@ -116,7 +117,7 @@ export default function FeedScreen() {
           state === 'loading' ? (
             <ActivityIndicator color={colors.primary} style={styles.loading} accessibilityLabel="Memuat feed" />
           ) : state === 'error' ? (
-            <EmptyState icon="cloud-offline-outline" title="Gagal memuat feed" message={error ?? undefined} actionLabel="Coba lagi" actionIcon="refresh" onAction={refresh} />
+            <ErrorState title="Gagal memuat feed" message={error} onRetry={refresh} retrying={refreshing} />
           ) : (
             <EmptyState
               icon={profession.showcase.icon}

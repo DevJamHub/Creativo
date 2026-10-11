@@ -3,7 +3,7 @@
 // All errors come back as friendly Indonesian messages; details are only logged in development.
 
 import { MAX_POST_IMAGES, type Comment, type LocalImage, type Post, type PostKind } from '@/models/post';
-import { professionIdsMatching } from '@/models/profession';
+import { getProfession, professionIdsMatching } from '@/models/profession';
 import type { PublicProfile } from '@/models/profile';
 import { supabase } from '@/services/supabase';
 
@@ -109,12 +109,32 @@ export async function searchProfessionals(
     page_size: PROFESSIONALS_PAGE_SIZE,
     page_offset: search.page * PROFESSIONALS_PAGE_SIZE,
   });
-  if (error) return failure('Gagal mencari profesional. Periksa koneksi internet kamu.', error);
+  // The project does not have the function yet (migration not applied): search the newest
+  // profiles on the phone, as the app did before, so Beranda keeps working.
+  if (error && (error as { code?: string }).code === 'PGRST202') return searchProfessionalsLocally(search);
+  if (error) return failure('Gagal mencari profesional. Coba lagi sebentar.', error);
   const rows = (data as (PublicProfile & { total_count: number })[] | null) ?? [];
   return {
-    data: { items: rows.map(({ total_count: _total, ...profile }) => profile), total: Number(rows[0]?.total_count ?? 0) },
+    // An empty page (e.g. people left between pages) has no total_count: -1 means "keep the last total"
+    data: { items: rows.map(({ total_count: _total, ...profile }) => profile), total: rows.length ? Number(rows[0].total_count) : -1 },
     error: null,
   };
+}
+
+/** Same search over public_profiles() (newest 200), filtered here. Used until search_professionals() exists. */
+async function searchProfessionalsLocally(search: ProfessionalSearch): Promise<Result<{ items: PublicProfile[]; total: number }>> {
+  const all = await fetchPublicProfiles();
+  if (all.error !== null) return failure('Gagal mencari profesional. Coba lagi sebentar.', all.error);
+  const q = search.query.trim().toLowerCase();
+  const matches = all.data.filter((p) => {
+    if (search.field && p.profession !== search.field) return false;
+    if (search.openOnly && !p.open_to_work) return false;
+    if (!q) return true;
+    const haystack = [p.full_name, getProfession(p.profession).label, p.headline, ...(p.specializations ?? [])];
+    return haystack.some((text) => text?.toLowerCase().includes(q));
+  });
+  const start = search.page * PROFESSIONALS_PAGE_SIZE;
+  return { data: { items: matches.slice(start, start + PROFESSIONALS_PAGE_SIZE), total: matches.length }, error: null };
 }
 
 /* ------------------------------------------------------------------ */

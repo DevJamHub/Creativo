@@ -1,9 +1,9 @@
--- NOT APPLIED YET: run this in the Creativo Supabase project before merging the PR for issue #20.
 -- Beranda search across ALL professionals, page by page.
 -- public_profiles() returns at most 200 profiles (newest first) and the app filtered those on the
 -- phone, so once there were more than 200 users the older ones could never be found. This function
 -- filters in the database and returns one page at a time, with the total number of matches.
 -- Like public_profiles(): security definer, public columns only (never the email), signed-in users only.
+-- Until this migration is applied, the app falls back to filtering public_profiles() on the phone.
 
 create function public.search_professionals(
   q text default null,                     -- name, headline or specialization (case-insensitive)

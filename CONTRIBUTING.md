@@ -74,16 +74,18 @@ Sebelum push, jalankan pengecekan yang sama dengan CI:
 ```bash
 npx expo lint
 npx tsc --noEmit
+npm test
 ```
 
 ## 5. CI (GitHub Actions)
 
-Setiap PR ke `main` menjalankan 2 job. Keduanya harus hijau (✓ 2/2) sebelum merge.
+Setiap PR ke `main` menjalankan job berikut. Semuanya harus hijau sebelum merge.
 
 | Job | Perintah |
 |---|---|
 | `lint` | `npm run lint` (`expo lint`) |
 | `typecheck` | `npx tsc --noEmit` |
+| `test` | `npm test` (Jest + `jest-expo`, file di `src/__tests__/`), ditambahkan lewat #25 |
 
 Detailnya ada di `.github/workflows/ci.yml`.
 
@@ -97,7 +99,21 @@ Detailnya ada di `.github/workflows/ci.yml`.
 
 Merge dengan **Squash and merge** supaya satu PR menjadi satu commit rapi di `main`, lalu hapus branch-nya. Issue yang disebut dengan `Closes #` otomatis tertutup.
 
-## 7. Keamanan
+## 7. Konvensi kode
+
+Aturan singkat supaya kode semua anggota tim terlihat seperti ditulis satu orang. Aturan khusus Expo (versi SDK, `npx expo install`, folder `ios/` dan `android/`) ada di [`AGENTS.md`](AGENTS.md).
+
+| Bagian | Aturan |
+|---|---|
+| Bahasa | Teks di layar dan pesan error Bahasa Indonesia; komentar kode Bahasa Inggris. |
+| Alur MVC | `app → controllers → services → Supabase`. Layar di `src/app/` tidak memanggil Supabase langsung; `models/` dan `utils/` berisi fungsi murni tanpa I/O. |
+| Route | Setiap file di `src/app/` adalah layar (Expo Router). Komponen, hook, dan helper ditaruh di luar `src/app/`. |
+| Tampilan | Warna, huruf, dan jarak selalu dari `src/theme/index.ts` (tema "Notion + Claude"), bukan kode warna langsung. Komponen umum dari `src/views/ui/` (`Button`, `AppText`, `Chip`, `EmptyState`, `ErrorState`, `LoadingState`, …). |
+| Dependensi | Pasang paket dengan `npx expo install <paket>` supaya versinya cocok dengan SDK; utamakan modul Expo. Hapus paket yang tidak lagi dipakai. |
+| Test | Fungsi murni baru (model, utils, reducer) diberi unit test di `src/__tests__/<nama>.test.ts`. |
+| Database | Perubahan tabel atau fungsi selalu berupa **file migrasi baru** di `supabase/migrations/` (migrasi lama tidak diubah), lalu dijalankan di Supabase oleh pemilik project. |
+
+## 8. Keamanan
 
 - `.env`, kunci, dan file rahasia lain tidak boleh di-commit (sudah ada di `.gitignore`). Isi `.env` dari `.env.example`.
 - Hanya *anon/publishable key* Supabase yang boleh ada di aplikasi, jangan pernah *service-role key*.

@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
 import { colors, spacing } from '@/theme';
-import { emailError } from '@/utils/validation';
+import { emailError, passwordError } from '@/utils/validation';
 import { AuthInput } from '@/views/auth/AuthInput';
 import { AuthScreen } from '@/views/auth/AuthScreen';
 import { ErrorBanner } from '@/views/auth/ErrorBanner';
@@ -25,7 +25,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   function validate() {
-    const errs = { email: emailError(email), password: password ? undefined : 'Kata sandi wajib diisi.' };
+    const errs = { email: emailError(email), password: passwordError(password) };
     setFieldErrors(errs);
     return !errs.email && !errs.password;
   }

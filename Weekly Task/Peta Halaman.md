@@ -2,7 +2,7 @@
 
 Daftar file yang dipakai tiap halaman. Semua path relatif ke `src/`.
 
-**Alur data:** halaman (`app/`) → controller (`controllers/`) → service (`services/`) → Supabase.
+**Alur data:** halaman (`app/`) → controller (`controllers/`) → service (`services/`) → Supabase atau API publik.
 
 | Controller | Service yang dipakai |
 |---|---|
@@ -10,6 +10,7 @@ Daftar file yang dipakai tiap halaman. Semua path relatif ke `src/`.
 | `PostsProvider`, `useComments` | `posts.service` |
 | `SocialProvider`, `useConnections` | `social.service` |
 | `MessagesProvider`, `useChat` | `messages.service` |
+| `useJobs` | `jobs.service` → `http` (fetch ke Himalayas Jobs API) |
 
 Semua halaman juga memakai `theme/` (warna, huruf) dan `views/ui/` (tombol, teks, avatar, dll.).
 
@@ -44,6 +45,7 @@ Semua halaman juga memakai `theme/` (warna, huruf) dan `views/ui/` (tombol, teks
 | Edit caption | `app/post/[id]/edit.tsx` | `services/posts.service` |
 | Notifikasi | `app/notifications.tsx` | `views/profile/FollowButton`, `models/notification`, `controllers/SocialProvider` |
 | Chat (DM) | `app/chat/[id].tsx` | `controllers/useChat`, `models/message` |
+| **Lowongan** | `app/jobs.tsx` | `views/jobs/JobCard`, `controllers/useJobs`, `models/job`, `views/ui/` (LoadingState, ErrorState, DataStatus) |
 
 ## Navigasi (bukan halaman)
 

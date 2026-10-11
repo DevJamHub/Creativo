@@ -166,15 +166,7 @@ export default function HomeScreen() {
               {search.firstLoad ? (
                 <ProfessionalRowSkeleton />
               ) : search.error ? (
-                <EmptyState
-                  boxed
-                  icon="cloud-offline-outline"
-                  title="Profesional tidak bisa dimuat"
-                  message={search.error}
-                  actionLabel="Coba lagi"
-                  actionIcon="refresh"
-                  onAction={search.reload}
-                />
+                <ErrorState boxed title="Profesional tidak bisa dimuat" message={search.error} onRetry={search.reload} />
               ) : pros.length > 0 ? (
                 // Scrolling near the end loads the next 30; the previous results stay (dimmed) while a new search runs
                 <FlatList
@@ -190,6 +182,18 @@ export default function HomeScreen() {
                   ListFooterComponent={
                     search.loadingMore ? (
                       <ActivityIndicator color={colors.primary} style={styles.more} accessibilityLabel="Memuat profesional lainnya" />
+                    ) : search.loadMoreError ? (
+                      // The next page failed: onEndReached won't fire again by itself, so offer a retry
+                      <Pressable
+                        onPress={search.loadMore}
+                        style={styles.more}
+                        accessibilityRole="button"
+                        accessibilityLabel="Gagal memuat profesional lainnya. Coba lagi"
+                      >
+                        <AppText variant="caption" color={colors.primary}>
+                          Coba lagi
+                        </AppText>
+                      </Pressable>
                     ) : null
                   }
                 />

@@ -44,18 +44,22 @@ export function useProfessionalSearch({ query, field, openOnly }: ProfessionalFi
 
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
-  const latestKey = useRef(key);
+  // Bumped for every new first page (new search or pull to refresh), so a page that was
+  // still loading for the old list is never appended to the new one
+  const generation = useRef(0);
 
   useEffect(() => {
-    latestKey.current = key;
+    const current = ++generation.current;
     let active = true;
     postsApi.searchProfessionals({ query: text, field, openOnly, page: 0 }).then((result) => {
-      if (!active) return;
+      if (!active || current !== generation.current) return;
+      setLoadMoreError(null); // a fresh first page: an old "load more" failure no longer applies
       setLoaded(
         result.error !== null
           ? { key, items: [], total: 0, error: result.error }
-          : { key, items: result.data.items, total: result.data.total, error: null },
+          : { key, items: result.data.items, total: Math.max(result.data.total, 0), error: null },
       );
     });
     return () => {
@@ -72,24 +76,33 @@ export function useProfessionalSearch({ query, field, openOnly }: ProfessionalFi
   const total = loaded?.total ?? 0;
   const hasMore = !searching && !error && items.length < total;
 
-  /** Next page, when the list is scrolled to its end */
+  /** Next page, when the list is scrolled to its end (or "Coba lagi" after a failed page) */
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore) return;
+    const current = generation.current;
     setLoadingMore(true);
+    setLoadMoreError(null);
     const page = Math.ceil(items.length / postsApi.PROFESSIONALS_PAGE_SIZE);
     const result = await postsApi.searchProfessionals({ query: text, field, openOnly, page });
     setLoadingMore(false);
-    if (result.error !== null || latestKey.current !== key) return; // failed, or the search changed meanwhile
+    if (current !== generation.current) return; // a new search or a refresh started meanwhile
+    if (result.error !== null) {
+      setLoadMoreError(result.error);
+      return;
+    }
     setLoaded((cur) => {
       if (!cur || cur.key !== key) return cur;
       // New people may have joined since page 1; skip anyone already in the list
       const seen = new Set(cur.items.map((p) => p.id));
-      return { ...cur, items: [...cur.items, ...result.data.items.filter((p) => !seen.has(p.id))], total: result.data.total };
+      const fresh = result.data.items.filter((p) => !seen.has(p.id));
+      // An empty page has no total (-1): keep the one we have, but stop asking for more
+      const nextTotal = result.data.total < 0 ? cur.items.length + fresh.length : result.data.total;
+      return { ...cur, items: [...cur.items, ...fresh], total: nextTotal };
     });
   }, [hasMore, loadingMore, items.length, text, field, openOnly, key]);
 
   /** Search again from page 1 (pull to refresh) */
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
-  return { items, total, firstLoad, searching, error, hasMore, loadingMore, loadMore, reload };
+  return { items, total, firstLoad, searching, error, hasMore, loadingMore, loadMoreError, loadMore, reload };
 }

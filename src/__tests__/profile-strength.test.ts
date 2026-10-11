@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import type { Profile } from '@/models/profile';
 import { profileStrength } from '@/utils/profileStrength';
 

@@ -25,6 +25,8 @@ const PREFIX = 'creativo.';
 export const localKeys = {
   /** Last feed tab (Untukmu · Diikuti · Bidangku), so the feed reopens where you left it */
   feedView: 'feedView',
+  /** Which account turned on the fingerprint / Face ID app lock (a setting, not a secret) */
+  biometricLock: 'biometricLock',
 } as const;
 
 export const localStore = {

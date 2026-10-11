@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import {
   MIN_PASSWORD_LENGTH,
   confirmPasswordError,

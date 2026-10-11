@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import type { AppNotification } from '@/models/notification';
 import { describeNotification } from '@/models/notification';
 import type { Comment, Post } from '@/models/post';

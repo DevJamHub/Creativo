@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { timeAgo } from '@/utils/time';
 
 const NOW = new Date('2026-10-03T12:00:00Z').getTime();

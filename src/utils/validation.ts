@@ -11,6 +11,11 @@ export function emailError(email: string): string | undefined {
   if (!isValidEmail(email)) return 'Masukkan alamat email yang valid.';
 }
 
+/** Signing in: only required, since the account's password may predate the length rule */
+export function passwordError(password: string): string | undefined {
+  if (!password) return 'Kata sandi wajib diisi.';
+}
+
 export function newPasswordError(password: string): string | undefined {
   if (!password) return 'Kata sandi wajib diisi.';
   if (password.length < MIN_PASSWORD_LENGTH) return `Kata sandi minimal ${MIN_PASSWORD_LENGTH} karakter.`;

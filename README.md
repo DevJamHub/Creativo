@@ -29,7 +29,17 @@ npx expo lint
 
 ## Alur kerja tim
 
-Pekerjaan dicatat sebagai issue user story, dikerjakan di branch terpisah, lalu masuk ke `main` lewat pull request yang dicek CI (lint + typecheck) dan di-review teman. Aturan lengkapnya ada di **[CONTRIBUTING.md](CONTRIBUTING.md)**, dan daftar pekerjaannya ada di tab **Issues** (milestone `MVP` dan `Rilis 1`).
+Pekerjaan dicatat sebagai issue user story, dikerjakan di branch terpisah, lalu masuk ke `main` lewat pull request yang dicek CI dan di-review teman. Aturan lengkapnya (format issue, branch, commit, PR, CI, review, dan konvensi kode) ada di **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
+| Ingin melihat | Buka |
+|---|---|
+| Daftar user story | [Issue berlabel `feature`](https://github.com/DevJamHub/Creativo/issues?q=is%3Aissue%20label%3Afeature) |
+| Semua pekerjaan (fitur, bug, dokumentasi, test) | [Issues](https://github.com/DevJamHub/Creativo/issues?q=is%3Aissue) |
+| Target per tahap | [Milestones](https://github.com/DevJamHub/Creativo/milestones): `MVP`, lalu `Rilis 1` |
+| Papan kerja (Todo → In Progress → Review → Done) | [Creativo Board](https://github.com/users/baybayyy26/projects/2) |
+| Riwayat perubahan yang sudah masuk | [Pull request yang di-merge](https://github.com/DevJamHub/Creativo/pulls?q=is%3Apr%20is%3Amerged) |
+
+**Tim:** Sigit Novriyanto ([@DevJamHub](https://github.com/DevJamHub)) dan Aditiya Al Bayhaqy ([@baybayyy26](https://github.com/baybayyy26)).
 
 ## Struktur (MVC)
 

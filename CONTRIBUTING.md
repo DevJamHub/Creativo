@@ -7,7 +7,7 @@ flowchart LR
   A[Issue user story] --> B[Branch per issue]
   B --> C[Commit kecil]
   C --> D[Pull request]
-  D --> E{CI 2/2 hijau<br/>+ review teman}
+  D --> E{Semua job CI hijau<br/>+ review teman}
   E --> F[Squash merge ke main]
 ```
 
@@ -18,7 +18,7 @@ Semua pekerjaan dimulai dari issue. Pakai template yang tersedia saat membuat is
 | Jenis | Judul | Isi |
 |---|---|---|
 | User story | `[US x.y] Role — Nama Fitur` | "**Sebagai** …, **saya ingin** …, **agar** …", lalu Acceptance Criteria (checklist) dan Catatan Teknis |
-| Bug | `fix(scope): ringkasan masalah` | Langkah reproduksi, yang terjadi, dan yang seharusnya |
+| Bug | `fix: ringkasan masalah` (boleh dengan scope, misalnya `fix(beranda): …`) | Langkah reproduksi, yang terjadi, dan yang seharusnya |
 | Lainnya | Format Conventional Commits, misalnya `docs: …`, `test: …` | Latar belakang dan Acceptance Criteria |
 
 Angka `x` pada user story adalah modul (epic):
@@ -42,7 +42,7 @@ Satu branch untuk satu issue, dibuat dari `main` terbaru dengan format `<tipe>/<
 
 ```bash
 git switch main && git pull
-git switch -c feat/20-cari-profesional
+git switch -c feat/20-pencarian-profesional
 # atau langsung dari issue:
 gh issue develop 20 --checkout
 ```

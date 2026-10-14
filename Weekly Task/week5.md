@@ -113,7 +113,7 @@ eyJhbGciOiJFUzI1NiIs… . eyJzdWIiOiI4ZjJ… . X9fQ3k…
 │ └──────────────────────────────────────────┘ │
 │ SESI LOGIN (JWT)                             │
 │ ┌──────────────────────────────────────────┐ │
-│ │ 🔑 Token akses           eyJhbGciOi…     │ │ ← disamarkan, tidak pernah utuh
+│ │ 🔑 Token akses     eyJhbGciOi…X9fQ3k     │ │ ← awal + akhir saja, tidak pernah utuh
 │ │ </> Format               JWT · ES256     │ │ ← dari header JWT
 │ │ 👤 Peran                 authenticated   │ │ ← dari payload JWT
 │ │ ⏱ Berlaku s/d    18.20 (59 menit lagi)   │ │ ← dari klaim exp, menghitung mundur
@@ -159,8 +159,8 @@ Ambil token dari SecureStore → kirim request ke **endpoint yang dilindungi** d
 | Endpoint | Request | Header `Authorization` |
 |---|---|---|
 | **Login** | `POST /auth/v1/token?grant_type=password` | `Bearer sb_publishable_…` (kunci publik aplikasi). Token pengguna **belum ada**, karena login justru menghasilkannya |
-| **Menu Feed** | `GET /rest/v1/posts?select=…` | `Bearer eyJhbGciOi…` (**JWT pengguna**) |
-| **Logout** | `POST /auth/v1/logout?scope=global` | `Bearer eyJhbGciOi…` (**JWT pengguna**) |
+| **Menu Feed** | `GET /rest/v1/posts?select=…` | `Bearer eyJhbGciOi…X9fQ3k` (**JWT pengguna**) |
+| **Logout** | `POST /auth/v1/logout?scope=global` | `Bearer eyJhbGciOi…X9fQ3k` (**JWT pengguna**) |
 
 Selain ketiganya, **semua** request Creativo setelah login memakai JWT yang sama: Beranda, profil, komentar, suka, koneksi, notifikasi, pesan, dan upload karya.
 
@@ -184,7 +184,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 ```
 
-Token **tidak pernah dicatat utuh**, hanya 10 karakter pertamanya (`eyJhbGciOi…`), dan di build production tidak ada log sama sekali.
+Token **tidak pernah dicatat utuh**. Yang ditampilkan hanya 10 karakter pertama dan 6 karakter terakhir (`eyJhbGciOi…X9fQ3k`). Awal JWT selalu sama (`eyJhbGciOi` = awal header), jadi akhiran signature dipakai untuk membedakan token lama dan token baru. Di build production tidak ada log sama sekali.
 
 ### Endpoint yang dilindungi (protected endpoint)
 
@@ -214,7 +214,7 @@ curl -s "$EXPO_PUBLIC_SUPABASE_URL/rest/v1/posts?select=id&limit=1" -H "apikey: 
 # 2. Token palsu → 401
 curl -s -w "\nHTTP %{http_code}\n" "$EXPO_PUBLIC_SUPABASE_URL/rest/v1/posts?select=id&limit=1" \
   -H "apikey: $EXPO_PUBLIC_SUPABASE_ANON_KEY" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImF1dGhlbnRpY2F0ZWQifQ.palsu"
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.palsu"
 ```
 
 ### Checklist Task 02 (slide)
@@ -310,11 +310,11 @@ Saat `npx expo start` berjalan, log muncul di **terminal Metro** (atau di consol
 
 ```
 [auth] Belum login (tidak ada token)
-[api] POST /auth/v1/token?grant_type=password → 200 · Bearer sb_publish… (kunci publik aplikasi, bukan token pengguna)
-[auth] Login berhasil → access token diterima: Bearer eyJhbGciOi… (JWT ES256 · role authenticated · berlaku 60 menit lagi), disimpan di SecureStore (terenkripsi)
-[api] GET /rest/v1/profiles?… → 200 · Bearer eyJhbGciOi… (JWT ES256 · role authenticated · berlaku 60 menit lagi)
-[api] GET /rest/v1/posts?… → 200 · Bearer eyJhbGciOi… (JWT ES256 · role authenticated · berlaku 60 menit lagi)
-[api] POST /auth/v1/logout?scope=global → 204 · Bearer eyJhbGciOi… (JWT ES256 · role authenticated · berlaku 58 menit lagi)
+[api] POST /auth/v1/token?grant_type=password → 200 (240 ms) · Bearer sb_publish… (kunci publik aplikasi, bukan token pengguna)
+[auth] Login berhasil → access token diterima: Bearer eyJhbGciOi…X9fQ3k (JWT ES256 · role authenticated · berlaku 60 menit lagi), disimpan di SecureStore (terenkripsi)
+[api] GET /rest/v1/profiles?… → 200 (190 ms) · Bearer eyJhbGciOi…X9fQ3k (JWT ES256 · role authenticated · berlaku 60 menit lagi)
+[api] GET /rest/v1/posts?… → 200 (210 ms) · Bearer eyJhbGciOi…X9fQ3k (JWT ES256 · role authenticated · berlaku 60 menit lagi)
+[api] POST /auth/v1/logout?scope=global → 204 (180 ms) · Bearer eyJhbGciOi…X9fQ3k (JWT ES256 · role authenticated · berlaku 58 menit lagi)
 [auth] Logout → token dihapus dari SecureStore (terenkripsi), sesi berakhir
 ```
 
@@ -355,13 +355,14 @@ PASS src/__tests__/token.test.ts
   Helper JWT
     ✓ decodeJwt membaca header.payload.signature, termasuk nama dengan huruf non-ASCII
     ✓ bukan JWT → null: "" / "abc" / "a.b" / "a..c" / "x.!!!.y" / kunci publik / payload bukan object
-    ✓ maskToken hanya menampilkan 10 karakter pertama
+    ✓ maskToken menampilkan 10 karakter pertama + 6 terakhir, tidak pernah utuh
+    ✓ dua JWT dari server yang sama terlihat berbeda setelah disamarkan (header-nya selalu sama)
     ✓ bearerToken mengambil token dari header Authorization
 
 PASS src/__tests__/security.test.ts      (18 test Week 3, semua tetap lolos)
 PASS src/__tests__/api.test.ts           (20 test Week 4, semua tetap lolos)
 
-Tests: 65 passed, 65 total
+Tests: 66 passed, 66 total
 ```
 
 `npx tsc --noEmit` dan `npx expo lint` bersih, dan aplikasi berhasil di-bundle untuk iOS (`npx expo export --platform ios`).
@@ -374,15 +375,15 @@ Tests: 65 passed, 65 total
 |---|---|---|
 | 1. Run | `npx expo start -c`, buka di Expo Go. Biarkan **terminal Metro** terlihat | `[auth] Belum login (tidak ada token)` |
 | 2. Login | Layar awal → **Masuk dengan Akun Creativo** → email + kata sandi → **Masuk** | Aplikasi terbuka. Terminal: `[api] POST /auth/v1/token … → 200` |
-| 3. Token diterima | Profil → kartu **Akun Creativo** | **Token akses `eyJhbGciOi…` · JWT · ES256 · authenticated · berlaku 60 menit**. Terminal: `[auth] Login berhasil → access token diterima …` |
+| 3. Token diterima | Profil → kartu **Akun Creativo** | **Token akses `eyJhbGciOi…X9fQ3k` · JWT · ES256 · authenticated · berlaku 60 menit**. Terminal: `[auth] Login berhasil → access token diterima …` |
 | 4. Token tersimpan | Lihat baris **Disimpan di** | **SecureStore (terenkripsi) ✓**: token dibaca ulang dari SecureStore dan cocok |
-| 5. Request protected | Buka tab **Feed**, tarik ke bawah untuk memuat ulang | Terminal: `[api] GET /rest/v1/posts… → 200 · Bearer eyJhbGciOi… (JWT · role authenticated …)` |
+| 5. Request protected | Buka tab **Feed**, tarik ke bawah untuk memuat ulang | Terminal: `[api] GET /rest/v1/posts… → 200 (210 ms) · Bearer eyJhbGciOi…X9fQ3k (JWT · role authenticated …)` |
 | 6. Data API tampil | Lihat layar | Karya-karya di Feed |
-| 7. Logout | Akun Creativo → **Keluar dari Akun Creativo** → konfirmasi | Terminal: `[api] POST /auth/v1/logout?scope=global → 204 · Bearer eyJ…`, lalu `[auth] Logout → token dihapus …` |
+| 7. Logout | Akun Creativo → **Keluar dari Akun Creativo** → konfirmasi | Terminal: `[api] POST /auth/v1/logout?scope=global → 204 (180 ms) · Bearer eyJ…`, lalu `[auth] Logout → token dihapus …` |
 | 8. Session berakhir | Lihat layar | Kembali ke layar awal |
-| 9. Token baru | Masuk lagi → Akun Creativo | Token dan "Berlaku s/d" **berbeda** dari sebelumnya |
+| 9. Token baru | Masuk lagi → Akun Creativo | **Akhiran token** (6 karakter terakhir) dan **"Berlaku s/d"** berbeda dari sebelumnya |
 | 10. Tanpa token ditolak | Jalankan 2 perintah `curl` di Task 02 | `[]` dan `HTTP 401` |
-| 11. Explain | `npm test` | 65 test lolos |
+| 11. Explain | `npm test` | 66 test lolos |
 
 ### Jawaban pertanyaan demo
 
@@ -472,7 +473,7 @@ Akun dan data dari project lama ikut terhapus, jadi semua pengguna perlu **membu
 | 01 | `src/app/(auth)/login.tsx` | Judul **"Masuk ke Akun Creativo"**. Form akun Creativo di atas, Google di bawah |
 | 01 | `src/app/(auth)/signup.tsx` | Judul **"Buat Akun Creativo"** |
 | 01 | `src/views/auth/SocialButtons.tsx` | Tombol Apple dihapus (hanya Google) |
-| 01 | `src/utils/jwt.ts` | 🆕 `decodeJwt()`, `secondsLeft()`, `maskToken()`, `bearerToken()` |
+| 01 | `src/utils/jwt.ts` | 🆕 `decodeJwt()`, `secondsLeft()`, `maskToken()` (awal + akhir token saja), `bearerToken()` |
 | 01, 03 | `src/app/account.tsx` | 🆕 Layar **Akun Creativo**: status login, token JWT (disamarkan), algoritma, peran, masa berlaku, bukti tersimpan di SecureStore, tombol **Keluar dari Akun Creativo** |
 | 01, 03 | `src/app/(tabs)/profile.tsx` | Kartu **Akun Creativo** yang membuka layar di atas |
 | 01, 03 | `src/app/_layout.tsx` | Mendaftarkan layar `account` (hanya untuk pengguna yang sudah login) |
@@ -480,5 +481,5 @@ Akun dan data dari project lama ikut terhapus, jadi semua pengguna perlu **membu
 | 02 | `src/services/tokenLog.ts` | 🆕 `loggedFetch` (setiap request + token di header `Authorization`) dan `logAuthEvent()` (login / token diperbarui / logout) |
 | 02 | `src/services/supabase.ts` | `global: { fetch: loggedFetch }` dan nama penyimpanan sesi `SESSION_STORAGE_KEY` |
 | 02 | `src/controllers/useAuth.ts` | Setiap perubahan sesi dicatat lewat `logAuthEvent()` |
-| 01–03 | `src/__tests__/token.test.ts` | 🆕 27 test (total 65) |
+| 01–03 | `src/__tests__/token.test.ts` | 🆕 28 test (total 66) |
 | — | `.env`, `.mcp.json`, `.gitignore` | Project Supabase baru. `supabase/.temp/` (data `supabase link`) tidak ikut di-commit |

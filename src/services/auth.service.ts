@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import type { OnboardingAnswers, Profile, ProfileEdits } from '@/models/profile';
 import { secureSessionStorage } from '@/services/storage';
 import { SESSION_STORAGE_KEY, supabase } from '@/services/supabase';
+import { logOAuthBrowser } from '@/services/tokenLog';
 
 export type OAuthProvider = Extract<Provider, 'google' | 'apple'>;
 
@@ -124,7 +125,9 @@ export async function signInWithOAuth(provider: OAuthProvider): Promise<AuthResu
   if (error) return { error: friendlyAuthError(error) };
   if (isWeb) return { error: null };
 
+  const opened = Date.now();
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  logOAuthBrowser(provider, result.type, Date.now() - opened);
   if (result.type !== 'success') return { error: null, cancelled: true };
 
   return completeAuthFromUrl(result.url);

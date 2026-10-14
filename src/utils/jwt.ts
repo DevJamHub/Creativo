@@ -57,9 +57,13 @@ export function secondsLeft(claims: JwtClaims, now = Date.now()): number | null 
   return typeof claims.exp === 'number' ? Math.floor(claims.exp - now / 1000) : null;
 }
 
-/** First characters only, so a token can be shown in logs without giving it away. */
+/**
+ * A token shown without giving it away: the first 10 characters (for a JWT always the same header
+ * start, "eyJhbGciOi") plus the last 6 of the signature, so two different tokens look different.
+ */
 export function maskToken(token: string): string {
-  return token.length <= 12 ? '***' : `${token.slice(0, 10)}…`;
+  if (token.length <= 12) return '***';
+  return token.length < 40 ? `${token.slice(0, 10)}…` : `${token.slice(0, 10)}…${token.slice(-6)}`;
 }
 
 /** The token from an "Authorization: Bearer <token>" header, or null. */

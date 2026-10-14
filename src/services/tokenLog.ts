@@ -45,20 +45,31 @@ export const loggedFetch: typeof fetch = async (input, init) => {
 
   const request = describeRequest(input, init);
   const token = describeToken(bearerToken(new Headers(init?.headers).get('Authorization')));
+  const started = Date.now();
   try {
     const response = await fetch(input, init);
     lastFailure = null;
-    console.log(`[api] ${request} → ${response.status} · ${token}`);
+    console.log(`[api] ${request} → ${response.status} (${Date.now() - started} ms) · ${token}`);
     return response;
   } catch (err) {
     // No response at all: offline, or the server's address can't be found (e.g. a paused Supabase project)
     const reason = err instanceof Error ? err.message : String(err);
-    const line = `[api] ${request} → gagal, server tidak bisa dihubungi (${reason}) · ${token}`;
-    if (line !== lastFailure) console.log(`${line}\n      Percobaan ulang yang sama tidak dicatat lagi sampai ada request yang berhasil.`);
-    lastFailure = line;
+    const failure = `[api] ${request} → gagal, server tidak bisa dihubungi (${reason}) · ${token}`;
+    if (failure !== lastFailure) {
+      console.log(`${failure} · setelah ${Date.now() - started} ms`);
+      console.log('      Percobaan ulang yang sama tidak dicatat lagi sampai ada request yang berhasil.');
+    }
+    lastFailure = failure;
     throw err;
   }
 };
+
+/** How long the sign-in browser (e.g. Google's account picker) stayed open, to tell its wait from the app's. */
+export function logOAuthBrowser(provider: string, outcome: string, ms: number) {
+  if (!__DEV__) return;
+  const name = provider === 'google' ? 'Google' : provider;
+  console.log(`[auth] ${name}: browser login ditutup setelah ${(ms / 1000).toFixed(1)} dtk (${outcome})`);
+}
 
 /** Logs what happened to the session: token received, refreshed, or removed. */
 export function logAuthEvent(event: AuthChangeEvent, session: Session | null) {

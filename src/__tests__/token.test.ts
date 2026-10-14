@@ -296,9 +296,9 @@ describe('Log konsol untuk demo', () => {
     await client.auth.signOut({ scope: 'global' });
 
     const output = logs.join('\n');
-    expect(output).toMatch(/\[api\] POST \/auth\/v1\/token\?grant_type=password → 200 · Bearer sb_publish… \(kunci publik/);
-    expect(output).toMatch(/\[api\] GET \/rest\/v1\/posts\S* → 200 · Bearer eyJhbGciOi… \(JWT HS256 · role authenticated · berlaku 60 menit lagi\)/);
-    expect(output).toMatch(/\[api\] POST \/auth\/v1\/logout\?scope=global → 204 · Bearer eyJhbGciOi… \(JWT/);
+    expect(output).toMatch(/\[api\] POST \/auth\/v1\/token\?grant_type=password → 200 \(\d+ ms\) · Bearer sb_publish… \(kunci publik/);
+    expect(output).toMatch(/\[api\] GET \/rest\/v1\/posts\S* → 200 \(\d+ ms\) · Bearer eyJhbGciOi…\S{6} \(JWT HS256 · role authenticated · berlaku 60 menit lagi\)/);
+    expect(output).toMatch(/\[api\] POST \/auth\/v1\/logout\?scope=global → 204 \(\d+ ms\) · Bearer eyJhbGciOi…\S{6} \(JWT/);
     expect(output).not.toContain(token);
     expect(output).not.toContain(PUBLIC_KEY);
   });
@@ -342,9 +342,18 @@ describe('Helper JWT', () => {
     (text) => expect(decodeJwt(text)).toBeNull(),
   );
 
-  it('maskToken hanya menampilkan 10 karakter pertama', () => {
-    expect(maskToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')).toBe('eyJhbGciOi…');
+  it('maskToken menampilkan 10 karakter pertama + 6 terakhir, tidak pernah utuh', () => {
+    const token = makeJwt({ sub: USER.id, role: 'authenticated' }, 'signature-ABC123');
+    expect(maskToken(token)).toBe('eyJhbGciOi…ABC123');
+    expect(maskToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')).toBe('eyJhbGciOi…'); // short: no tail
     expect(maskToken('pendek')).toBe('***');
+  });
+
+  it('dua JWT dari server yang sama terlihat berbeda setelah disamarkan (header-nya selalu sama)', () => {
+    const first = makeJwt({ sub: USER.id, session_id: 'sesi-1' }, 'tanda-tangan-AAA111');
+    const second = makeJwt({ sub: USER.id, session_id: 'sesi-2' }, 'tanda-tangan-BBB222');
+    expect(first.slice(0, 10)).toBe(second.slice(0, 10));
+    expect(maskToken(first)).not.toBe(maskToken(second));
   });
 
   it('bearerToken mengambil token dari header Authorization', () => {

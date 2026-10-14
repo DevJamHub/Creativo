@@ -80,7 +80,7 @@ export default function SignUpScreen() {
   const busy = pending !== null;
 
   return (
-    <AuthScreen title="Buat Akun Kamu" subtitle="Bergabunglah dengan Creativo hari ini.">
+    <AuthScreen title="Buat Akun Creativo" subtitle="Bergabunglah dengan Creativo hari ini.">
       <SocialButtons onError={setError} />
 
       <OrDivider />

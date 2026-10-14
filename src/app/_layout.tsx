@@ -70,6 +70,7 @@ function RootStack() {
           <Stack.Screen name="user/[id]/connections" />
           <Stack.Screen name="chat/[id]" />
           <Stack.Screen name="jobs" />
+          <Stack.Screen name="account" />
         </Stack.Protected>
 
         {/* Deep-link targets from Supabase emails / OAuth; they work in either state */}

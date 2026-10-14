@@ -152,6 +152,35 @@ describe('5. Data sensitif → PROTECTED', () => {
     expect(await secureSessionStorage.getItem(SESSION_KEY)).toBe(session);
     expect(await AsyncStorage.getItem(SESSION_KEY)).not.toContain('rahasia');
   });
+
+  it('data sesi dengan format lain tidak membuat error: dihapus, lalu pengguna masuk lagi', async () => {
+    // What a phone had under the session key: a JSON list of hex codes instead of our ciphertext
+    const foreign = JSON.stringify(Array.from({ length: 5 }, () => 'ab'.repeat(16)));
+    await AsyncStorage.setItem(SESSION_KEY, foreign);
+    await SecureStore.setItemAsync(SESSION_KEY, 'cd'.repeat(32));
+
+    await expect(secureSessionStorage.getItem(SESSION_KEY)).resolves.toBeNull();
+    expect(await AsyncStorage.getItem(SESSION_KEY)).toBeNull();
+    expect(await SecureStore.getItemAsync(SESSION_KEY)).toBeNull();
+  });
+
+  it('kunci yang tidak cocok tidak menghasilkan sesi palsu', async () => {
+    await secureSessionStorage.setItem(SESSION_KEY, session);
+    await SecureStore.setItemAsync(SESSION_KEY, 'cd'.repeat(32));
+    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBeNull();
+  });
+
+  it('membaca saat sesi sedang disimpan tidak merusak atau menghapus sesi', async () => {
+    const refreshed = session.replace('rahasia-access-token', 'rahasia-access-token-baru');
+    await secureSessionStorage.setItem(SESSION_KEY, session);
+
+    const [, read] = await Promise.all([
+      secureSessionStorage.setItem(SESSION_KEY, refreshed),
+      secureSessionStorage.getItem(SESSION_KEY),
+    ]);
+    expect(read).toBe(refreshed);
+    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBe(refreshed);
+  });
 });
 
 describe('Data biasa → local storage', () => {

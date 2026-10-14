@@ -137,6 +137,23 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
           </Pressable>
 
+          {/* The Creativo account and its JWT login session; sign out from there */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/account')}
+            style={(state) => [styles.dashboard, state.pressed && styles.pressed, focusRing(state)]}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.sky} />
+            <View style={styles.flex}>
+              <AppText variant="bodyStrong" color={colors.ink}>
+                Akun Creativo
+              </AppText>
+              <AppText variant="caption" color={colors.textMuted}>
+                Sedang masuk · sesi aman dengan token JWT. Lihat sesi atau keluar.
+              </AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+          </Pressable>
+
           {/* Remote job openings for this field, fetched live from a public jobs API */}
           <Pressable
             accessibilityRole="button"

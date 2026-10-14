@@ -9,6 +9,7 @@ import type { OnboardingAnswers, Profile, ProfileEdits } from '@/models/profile'
 import * as auth from '@/services/auth.service';
 import type { AuthResult, OAuthProvider } from '@/services/auth.service';
 import { supabase } from '@/services/supabase';
+import { logAuthEvent } from '@/services/tokenLog';
 
 export type PendingAction = 'email' | OAuthProvider | 'reset' | 'signOut' | 'profile';
 
@@ -44,7 +45,8 @@ export function useAuth() {
       .then(({ data }) => setSession(data.session))
       .finally(() => setInitializing(false));
 
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      logAuthEvent(event, next);
       setSession(next);
       setInitializing(false);
     });

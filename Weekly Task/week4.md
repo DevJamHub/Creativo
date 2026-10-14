@@ -7,7 +7,7 @@
 |---|---|---|
 | Task 01 | Connect to API (hubungkan aplikasi ke API yang relevan) | ✅ Himalayas Jobs API lewat `fetch()` |
 | Task 02 | Display API Data (tampilkan data API di interface) | ✅ Halaman **Lowongan** |
-| Task 03 | Handle API State (loading, berhasil, gagal) | ✅ 20 test baru lolos (total 35) |
+| Task 03 | Handle API State (loading, berhasil, gagal) | ✅ 20 test baru lolos (total 38) |
 
 ---
 
@@ -298,9 +298,9 @@ PASS src/__tests__/api.test.ts
     ✓ request lama yang digantikan request baru dibatalkan, bukan dianggap error
     ✓ ERROR menyimpan pesan; data lama tetap tampil kalau refresh yang gagal
 
-PASS src/__tests__/security.test.ts      (15 test dari Week 3, tetap lolos)
+PASS src/__tests__/security.test.ts      (15 test Week 3 + 3 test perbaikan sesi, semua lolos)
 
-Tests: 35 passed, 35 total
+Tests: 38 passed, 38 total
 ```
 
 Selain test di atas, pengolahan JSON juga **sudah dicoba ke API asli**. Contoh hasilnya: Desainer UI/UX dapat 18 dari 73 lowongan, Desainer Grafis 20 dari 54 (termasuk "Graphic Designer ID" dari Bjak dengan lokasi Indonesia), dan endpoint yang salah menghasilkan "Data tidak ditemukan.".
@@ -319,7 +319,7 @@ Selain test di atas, pengolahan JSON juga **sudah dicoba ke API asli**. Contoh h
 | 6. Buka data | Tekan salah satu kartu | Halaman lowongan asli terbuka di browser |
 | 7. Error | Nyalakan **mode pesawat**, lalu ganti bidang | ❗ "Gagal mengambil data · Tidak dapat terhubung ke server…" |
 | 8. Pulih | Matikan mode pesawat → **"Coba lagi"** | Data tampil kembali |
-| 9. Explain | `npm test` | 35 test lolos |
+| 9. Explain | `npm test` | 38 test lolos |
 
 ### Jawaban pertanyaan demo
 
@@ -354,7 +354,7 @@ Selain test di atas, pengolahan JSON juga **sudah dicoba ke API asli**. Contoh h
 | 4 | Dynamic data | ✅ Isi berubah sesuai bidang dan filter, selalu data terbaru |
 | 5 | Loading | ✅ |
 | 6 | Error handling | ✅ Lowongan, Beranda, dan Feed |
-| 7 | Test | ✅ 35 test lolos (`npm test`) |
+| 7 | Test | ✅ 38 test lolos (`npm test`) |
 | 8 | Commit | ⬜ Commit manual |
 | 9 | Push | ⬜ Push manual |
 
@@ -380,3 +380,27 @@ Selain test di atas, pengolahan JSON juga **sudah dicoba ke API asli**. Contoh h
 | `src/app/(tabs)/home.tsx` | Beranda menampilkan error + "Coba lagi" (sebelumnya terlihat kosong) |
 | `src/app/(tabs)/feed.tsx` | Feed memakai `ErrorState` yang sama |
 | `src/__tests__/api.test.ts` | 🆕 20 test API state |
+| `src/services/storage.ts` | 🔧 Perbaikan secure storage Week 3 (lihat bagian di bawah) |
+| `src/__tests__/security.test.ts` | +3 test untuk perbaikan tersebut |
+
+---
+
+## 🔧 Perbaikan: error `Array contains invalid value: NaN` saat membuka aplikasi
+
+**Gejala:** saat dibuka di Expo Go, aplikasi terus menampilkan error dari `decrypt` di `storage.ts`, dan error itu berulang setiap kali Supabase membaca sesi login.
+
+**Penyebab:** di HP sudah tersimpan data sesi dengan **format lain**, yaitu daftar kode hex `["…","…",…]`, bukan data terenkripsi milik Creativo. Kemungkinan data ini ditinggalkan versi aplikasi lain yang pernah dijalankan di Expo Go yang sama. Kode Week 3 menganggap data di tempat itu **pasti** hasil enkripsinya, jadi ketika isinya bukan hex, `decrypt` langsung melempar error.
+
+**Perbaikan (`src/services/storage.ts`):**
+- `decrypt` tidak pernah melempar error lagi. Data dicek dulu, dan kalau tidak bisa dibaca hasilnya `null`.
+- Data sesi yang tidak bisa dibaca **dihapus**, beserta kuncinya. Supabase lalu menganggap belum ada sesi, dan pengguna cukup **masuk sekali lagi**.
+- Kunci yang tidak cocok tidak lagi menghasilkan sesi palsu (hasil dekripsinya harus JSON yang valid).
+- Baca dan simpan sesi sekarang **antre per kunci**. Sebelumnya, kalau Supabase membaca sesi tepat saat sedang menyimpannya (misalnya setelah token diperbarui), yang terbaca bisa kunci baru dengan data lama, dan hasilnya rusak.
+
+Tiga test baru di `security.test.ts` mengunci perbaikan ini, dan ketiganya **gagal di kode lama**:
+
+```
+✓ data sesi dengan format lain tidak membuat error: dihapus, lalu pengguna masuk lagi
+✓ kunci yang tidak cocok tidak menghasilkan sesi palsu
+✓ membaca saat sesi sedang disimpan tidak merusak atau menghapus sesi
+```

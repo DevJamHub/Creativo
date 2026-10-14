@@ -1,4 +1,4 @@
-// Google + Apple buttons wired to the auth context. Errors are reported to the parent screen.
+// Social sign-in buttons (Google) wired to the auth context. Errors are reported to the parent screen.
 
 import { StyleSheet, View } from 'react-native';
 
@@ -8,8 +8,9 @@ import { spacing } from '@/theme';
 
 import { SocialButton } from './SocialButton';
 
-// Toggle providers here once they are configured in Supabase → Authentication → Providers
-const ENABLED_PROVIDERS: OAuthProvider[] = ['google', 'apple'];
+// Toggle providers here once they are configured in Supabase → Authentication → Providers.
+// Apple is off: signing in with Apple needs a paid Apple Developer account.
+const ENABLED_PROVIDERS: OAuthProvider[] = ['google'];
 
 export function SocialButtons({ onError }: { onError: (message: string | null) => void }) {
   const { signInWithOAuth, pending } = useAuthContext();

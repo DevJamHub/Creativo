@@ -8,7 +8,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
 import type { OnboardingAnswers, Profile, ProfileEdits } from '@/models/profile';
-import { supabase } from '@/services/supabase';
+import { secureSessionStorage } from '@/services/storage';
+import { SESSION_STORAGE_KEY, supabase } from '@/services/supabase';
 
 export type OAuthProvider = Extract<Provider, 'google' | 'apple'>;
 
@@ -163,8 +164,27 @@ export function exchangeAuthCode(code: string): Promise<AuthResult> {
 /*  Session / profile                                                  */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The access token as it is saved on the device: decrypted from secure storage on Android/iOS,
+ * read from localStorage on web. Shows the token really is stored, not only kept in memory.
+ */
+export async function storedAccessToken(): Promise<string | null> {
+  try {
+    const raw = isWeb ? globalThis.localStorage?.getItem(SESSION_STORAGE_KEY) : await secureSessionStorage.getItem(SESSION_STORAGE_KEY);
+    const token: unknown = raw ? JSON.parse(raw).access_token : null;
+    return typeof token === 'string' ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ends the session. Supabase revokes the refresh token on the server (scope 'global': every device),
+ * then deletes the stored session (access + refresh token) from secure storage — also when the
+ * server can't be reached. The next login therefore gets a brand-new token.
+ */
 export async function signOut(): Promise<AuthResult> {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: 'global' });
   return { error: error ? friendlyAuthError(error) : null };
 }
 

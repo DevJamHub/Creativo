@@ -1,4 +1,5 @@
-// Login screen with email/password and social auth options.
+// Login screen: the Creativo account (email + password) first, Google below.
+// A successful login returns a JWT access token, saved in secure storage (see Akun Creativo).
 
 import { Link } from 'expo-router';
 import { useState } from 'react';
@@ -39,11 +40,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <AuthScreen title="Selamat Datang Kembali" subtitle="Masuk untuk melanjutkan ke Creativo.">
-      <SocialButtons onError={setError} />
-
-      <OrDivider />
-
+    <AuthScreen title="Masuk ke Akun Creativo" subtitle="Masukkan email dan kata sandi akun Creativo kamu.">
       <View style={styles.form}>
         <AuthInput
           label="Email"
@@ -95,6 +92,10 @@ export default function LoginScreen() {
           </Link>
         </View>
       </View>
+
+      <OrDivider />
+
+      <SocialButtons onError={setError} />
 
       <View style={styles.footer}>
         <AppText variant="body" color={colors.textMuted}>

@@ -2,9 +2,9 @@
 // First screen unauthenticated users see: a bold pitch, the professions Creativo is built for, and the ways in.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
@@ -14,7 +14,6 @@ import { AuthScreen } from '@/views/auth/AuthScreen';
 import { ErrorBanner } from '@/views/auth/ErrorBanner';
 import { OrDivider } from '@/views/auth/OrDivider';
 import { SocialButtons } from '@/views/auth/SocialButtons';
-import { focusRing } from '@/views/auth/focus';
 import { Logo } from '@/views/brand/Logo';
 import { AppText } from '@/views/ui/AppText';
 import { Button } from '@/views/ui/Button';
@@ -60,26 +59,22 @@ export default function WelcomeScreen() {
 
           <OrDivider />
 
+          {/* Creativo account: email + password, signed in with a JWT from the server */}
           <Button
-            label="Lanjutkan dengan Email"
-            icon="mail"
+            label="Masuk dengan Akun Creativo"
+            icon="log-in-outline"
+            size="lg"
+            disabled={pending !== null}
+            onPress={() => router.push('/login')}
+          />
+          <Button
+            label="Buat Akun Creativo"
+            icon="person-add-outline"
+            variant="secondary"
             size="lg"
             disabled={pending !== null}
             onPress={() => router.push('/signup')}
           />
-        </View>
-
-        <View style={styles.footer}>
-          <AppText variant="body" color={colors.textMuted}>
-            Sudah punya akun?{' '}
-          </AppText>
-          <Link href="/login" asChild>
-            <Pressable accessibilityRole="link" hitSlop={8} style={focusRing}>
-              <AppText variant="bodyStrong" color={colors.primary}>
-                Masuk
-              </AppText>
-            </Pressable>
-          </Link>
         </View>
       </Animated.View>
     </AuthScreen>
@@ -102,5 +97,4 @@ const styles = StyleSheet.create({
   },
   tagText: { fontWeight: '600' },
   actions: { gap: spacing.sm },
-  footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: spacing.xxl },
 });

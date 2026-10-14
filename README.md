@@ -45,7 +45,7 @@ src/
 ├── services/       Akses data ke Supabase (Auth, database, storage) dan API publik
 │   ├── supabase.ts         client
 │   ├── auth.service.ts     login/daftar/OAuth/reset + simpan profil
-│   ├── posts.service.ts    postingan, unggah foto, suka, komentar
+│   ├── posts.service.ts    postingan, unggah foto, suka, komentar, cari profesional
 │   ├── social.service.ts   ikuti/berhenti, notifikasi + realtime
 │   ├── messages.service.ts pesan langsung, inbox, tanda dibaca + realtime
 │   ├── storage.ts          local storage + secure storage (token login terenkripsi)
@@ -58,12 +58,13 @@ src/
 │   ├── MessagesProvider.tsx / useChat.ts   inbox dan satu percakapan
 │   ├── useConnections.ts               pengikut/koneksi user mana pun + koneksi bersama
 │   ├── useJobs.ts                      lowongan: loading → berhasil / gagal, muat ulang
-│   └── useComments.ts                  komentar satu postingan: balas, suka, hapus
+│   ├── useComments.ts                  komentar satu postingan: balas, suka, hapus
+│   └── useProfessionalSearch.ts        pencarian profesional di Beranda (di database, 30 per halaman)
 ├── views/          Komponen tampilan yang bisa dipakai ulang
-│   ├── ui/          tombol, teks, chip, avatar, toast, LoadingState, ErrorState, DataStatus...
+│   ├── ui/          tombol, teks, chip, avatar, toast, LoadingState, ErrorState, DataStatus, skeleton (kerangka saat memuat)...
 │   ├── jobs/        JobCard
 │   ├── auth/        komponen layar masuk/daftar
-│   ├── feed/        PostCard, PostGrid, ImageCarousel, CommentItem, ProfessionalTile
+│   ├── feed/        PostCard, PostGrid, ImageCarousel, CommentItem, ProfessionalTile, ShowcaseSkeleton
 │   ├── profile/     ProfileHeader, ProfileTabs, PersonRow, FollowButton, shareProfile
 │   ├── messages/    ConversationRow
 │   ├── navigation/  TabBar
@@ -81,4 +82,4 @@ Aturan alurnya: **app → controllers → services → Supabase / API**. `models
 
 - Semua teks di aplikasi berbahasa Indonesia. Komentar kode tetap berbahasa Inggris.
 - Postingan disimpan di tabel `posts` dan foto di bucket storage publik `posts`, di folder `<user_id>/`.
-- Profil orang lain dibaca lewat fungsi `public_profiles()`, sehingga email tidak pernah terbuka ke user lain.
+- Profil orang lain dibaca lewat fungsi `public_profiles()`, sehingga email tidak pernah terbuka ke user lain. Pencarian di Beranda memakai `search_professionals()`, yang juga hanya mengembalikan kolom publik, menjangkau semua pengguna, dan dimuat per halaman.

@@ -55,6 +55,8 @@ Diambil dari riwayat git: perubahan dari `35a743a` sampai tag `week-4`. Hanya fi
 
 Pekerjaan PR #24–#27 belum masuk `main`; isinya digabung ke PR #28 yang menunggu review.
 
+Slide `week4 (1).pdf` sebelumnya berisi slide **Pemrograman Web** Pertemuan 4 (tertukar). Di PR ini file itu diganti dengan slide **Pemrograman Mobile** Pekan 4 (*Data Modeling + RESTful API*), dengan nama file yang sama.
+
 ## Membuka kode minggu ini
 
 ```bash

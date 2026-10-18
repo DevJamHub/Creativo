@@ -10,6 +10,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
 import { bearerToken, decodeJwt, maskToken, secondsLeft } from '@/utils/jwt';
+import { isSecureUrl } from '@/utils/secureUrl';
 
 const storageName = Platform.OS === 'web' ? 'localStorage (web)' : 'SecureStore (terenkripsi)';
 
@@ -30,7 +31,8 @@ function describeRequest(input: RequestInfo | URL, init?: RequestInit): string {
   const method = (init?.method ?? (typeof input === 'object' && 'method' in input ? input.method : 'GET')).toUpperCase();
   try {
     const { pathname, search } = new URL(raw);
-    return `${method} ${pathname}${search.length > 40 ? '?…' : search}`;
+    const insecure = isSecureUrl(raw) ? '' : ' ⚠️ TANPA HTTPS';
+    return `${method} ${pathname}${search.length > 40 ? '?…' : search}${insecure}`;
   } catch {
     return `${method} ${raw}`;
   }

@@ -10,6 +10,7 @@ import { AppState, Platform } from 'react-native';
 
 import { secureSessionStorage } from '@/services/storage';
 import { loggedFetch } from '@/services/tokenLog';
+import { assertSecureApiUrl } from '@/utils/secureUrl';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -19,6 +20,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
     'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env and fill them in.',
   );
 }
+
+// Every request carries the user's JWT, so it must travel encrypted: refuse a plain http:// server
+// (only a local development server is allowed without HTTPS). See src/utils/secureUrl.ts.
+assertSecureApiUrl(supabaseUrl);
 
 /** Where the session (access + refresh token) is saved on the device — Supabase's default name, made explicit */
 export const SESSION_STORAGE_KEY = `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`;

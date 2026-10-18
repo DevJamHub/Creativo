@@ -9,6 +9,8 @@ Closes #
 - [ ] refactor
 - [ ] style
 - [ ] docs
+- [ ] test
+- [ ] chore (dependensi, CI, konfigurasi)
 
 ## Cara mengetes
 1. ...

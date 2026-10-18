@@ -3,6 +3,7 @@
 // All errors come back as friendly Indonesian messages; details are only logged in development.
 
 import { MAX_POST_IMAGES, type Comment, type LocalImage, type Post, type PostKind } from '@/models/post';
+import { getProfession, professionIdsMatching } from '@/models/profession';
 import type { PublicProfile } from '@/models/profile';
 import { supabase } from '@/services/supabase';
 
@@ -79,6 +80,61 @@ export async function fetchPublicProfiles(): Promise<Result<PublicProfile[]>> {
   const { data, error } = await supabase.rpc('public_profiles');
   if (error) return failure('Gagal memuat daftar profesional.', error);
   return { data: (data as PublicProfile[] | null) ?? [], error: null };
+}
+
+/** How many professionals one search request returns (the database allows at most 50). */
+export const PROFESSIONALS_PAGE_SIZE = 30;
+
+export interface ProfessionalSearch {
+  /** Name, profession, specialization or headline */
+  query: string;
+  /** Only this profession id, or null for every field */
+  field: string | null;
+  /** Only people "Terbuka untuk peluang" */
+  openOnly: boolean;
+  /** 0-based page of PROFESSIONALS_PAGE_SIZE results */
+  page: number;
+}
+
+/** Search every onboarded professional in the database (search_professionals()), newest first. */
+export async function searchProfessionals(
+  search: ProfessionalSearch,
+): Promise<Result<{ items: PublicProfile[]; total: number }>> {
+  const query = search.query.trim();
+  const { data, error } = await supabase.rpc('search_professionals', {
+    q: query || null,
+    match_professions: query ? professionIdsMatching(query) : null,
+    field: search.field,
+    open_only: search.openOnly,
+    page_size: PROFESSIONALS_PAGE_SIZE,
+    page_offset: search.page * PROFESSIONALS_PAGE_SIZE,
+  });
+  // The project does not have the function yet (migration not applied): search the newest
+  // profiles on the phone, as the app did before, so Beranda keeps working.
+  if (error && (error as { code?: string }).code === 'PGRST202') return searchProfessionalsLocally(search);
+  if (error) return failure('Gagal mencari profesional. Coba lagi sebentar.', error);
+  const rows = (data as (PublicProfile & { total_count: number })[] | null) ?? [];
+  return {
+    // An empty page (e.g. people left between pages) has no total_count: -1 means "keep the last total"
+    data: { items: rows.map(({ total_count: _total, ...profile }) => profile), total: rows.length ? Number(rows[0].total_count) : -1 },
+    error: null,
+  };
+}
+
+/** Same search over public_profiles() (newest 200), filtered here. Used until search_professionals() exists. */
+async function searchProfessionalsLocally(search: ProfessionalSearch): Promise<Result<{ items: PublicProfile[]; total: number }>> {
+  const all = await fetchPublicProfiles();
+  if (all.error !== null) return failure('Gagal mencari profesional. Coba lagi sebentar.', all.error);
+  const q = search.query.trim().toLowerCase();
+  const matches = all.data.filter((p) => {
+    if (search.field && p.profession !== search.field) return false;
+    if (search.openOnly && !p.open_to_work) return false;
+    if (!q) return true;
+    const haystack = [p.full_name, getProfession(p.profession).label, p.headline, ...(p.specializations ?? [])];
+    return haystack.some((text) => text?.toLowerCase().includes(q));
+  });
+  const start = search.page * PROFESSIONALS_PAGE_SIZE;
+  return { data: { items: matches.slice(start, start + PROFESSIONALS_PAGE_SIZE), total: matches.length }, error: null };
 }
 
 /* ------------------------------------------------------------------ */

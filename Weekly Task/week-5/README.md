@@ -20,7 +20,7 @@
 | Anggota | Pekerjaan | Bukti |
 |---|---|---|
 | Sigit Novriyanto (@DevJamHub) | Tugas Task 01–03 (JWT login, layar Akun Creativo, log token, logout mencabut token), test token, `week5.md` | e5cbc0e, 3b2d816 |
-| Aditiya Al Bayhaqy (@baybayyy26) | Tambahan yang belum ada di Week 5: token hanya dikirim lewat HTTPS (#36, penjelasan di `week5-Bayhaqy.md`); menggabungkan PR #24–#27 yang disetujui ke satu branch (PR #28); peta per week ini (#34) dan slide Week 4 yang benar | PR #37, #28, #35 (menunggu review) |
+| Aditiya Al Bayhaqy (@baybayyy26) | Tambahan yang belum ada di Week 5: token hanya dikirim lewat HTTPS (#36, penjelasan di `week5-Bayhaqy.md`); menggabungkan PR #24–#27 yang disetujui ke satu branch (PR #60); peta per week ini (#34) dan slide Week 4 yang benar | PR #62, #60, #61 (menunggu review) |
 
 ## File yang dikerjakan
 
@@ -47,7 +47,7 @@ Diambil dari riwayat git: perubahan dari `c78f909` sampai tag `week-5`. Hanya fi
 
 ## Catatan
 
-Daftar file di atas hanya yang sudah masuk `main`. PR #28 belum termasuk sampai di-merge.
+Daftar file di atas hanya yang sudah masuk `main`. PR #60 belum termasuk sampai di-merge.
 
 ## Membuka kode minggu ini
 

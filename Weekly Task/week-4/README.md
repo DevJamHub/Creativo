@@ -20,7 +20,7 @@
 | Anggota | Pekerjaan | Bukti |
 |---|---|---|
 | Sigit Novriyanto (@DevJamHub) | Tugas Task 01–03 (Lowongan remote dari Himalayas Jobs API), kunci biometrik, test API dan keamanan, `week4.md` | c78f909 |
-| Aditiya Al Bayhaqy (@baybayyy26) | Menyesuaikan dan menguji ulang PR #24–#27 dengan kode terbaru: pencarian profesional ke semua pengguna, unit test + job CI `test`, audit dependensi, `CONTRIBUTING.md` | PR #24–#27 (digabung ke #28) |
+| Aditiya Al Bayhaqy (@baybayyy26) | Menyesuaikan dan menguji ulang PR #24–#27 dengan kode terbaru: pencarian profesional ke semua pengguna, unit test + job CI `test`, audit dependensi, `CONTRIBUTING.md` | PR #24–#27 (digabung ke #60) |
 
 ## Fitur tambahan yang dibuat minggu ini (Bagian B)
 
@@ -57,7 +57,7 @@ Diambil dari riwayat git: perubahan dari `35a743a` sampai tag `week-4`. Hanya fi
 
 ## Catatan
 
-Pekerjaan PR #24–#27 belum masuk `main`; isinya digabung ke PR #28 yang menunggu review.
+Pekerjaan PR #24–#27 belum masuk `main`; isinya digabung ke PR #60 yang menunggu review.
 
 Slide `week4 (1).pdf` sebelumnya berisi slide **Pemrograman Web** Pertemuan 4 (tertukar). Di PR ini file itu diganti dengan slide **Pemrograman Mobile** Pekan 4 (*Data Modeling + RESTful API*), dengan nama file yang sama.
 

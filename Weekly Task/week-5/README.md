@@ -13,6 +13,8 @@
 - [x] Task 03 — Protect the Session
 - [x] Penjelasan lengkap: [`week5.md`](../week5.md)
 
+**Issue per task (sub-issue):** [#50](https://github.com/DevJamHub/Creativo/issues/50) · [#51](https://github.com/DevJamHub/Creativo/issues/51) · [#52](https://github.com/DevJamHub/Creativo/issues/52)
+
 ## Siapa mengerjakan apa
 
 | Anggota | Pekerjaan | Bukti |

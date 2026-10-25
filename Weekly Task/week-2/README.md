@@ -13,13 +13,17 @@
 - [x] Task 03 — Inclusive Design & Accessibility
 - [x] Aplikasi berjalan di Expo Go
 
+**Issue per task (sub-issue):** [#41](https://github.com/DevJamHub/Creativo/issues/41) · [#42](https://github.com/DevJamHub/Creativo/issues/42) · [#43](https://github.com/DevJamHub/Creativo/issues/43)
+
 ## Siapa mengerjakan apa
 
 | Anggota | Pekerjaan | Bukti |
 |---|---|---|
 | Sigit Novriyanto (@DevJamHub) | Proyek Expo, halaman tab, login & onboarding Supabase (v1–v2) | 2639ce4, 9c4c325, 0086ca3, be4f993, eb73b2f |
 
-## User story yang selesai / dikerjakan
+## Fitur tambahan yang dibuat minggu ini (Bagian B)
+
+Bukan bagian dari tugas week ini. Dicatat terpisah per kelompok fitur di [📌 Peta Issues #59](https://github.com/DevJamHub/Creativo/issues/59).
 
 [#2](https://github.com/DevJamHub/Creativo/issues/2) · [#4](https://github.com/DevJamHub/Creativo/issues/4) · [#5](https://github.com/DevJamHub/Creativo/issues/5)
 

@@ -11,6 +11,8 @@
 - [x] Menentukan aplikasi: Product Canvas Creativo (lihat issue #29)
 - [x] Membuat repository GitHub
 
+**Issue per task (sub-issue):** [#39](https://github.com/DevJamHub/Creativo/issues/39) · [#40](https://github.com/DevJamHub/Creativo/issues/40)
+
 ## Siapa mengerjakan apa
 
 | Anggota | Pekerjaan | Bukti |

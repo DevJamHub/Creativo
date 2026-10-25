@@ -13,6 +13,8 @@
 - [x] Task 03 — Display API Data (halaman Lowongan)
 - [x] Penjelasan lengkap: [`week4.md`](../week4.md)
 
+**Issue per task (sub-issue):** [#47](https://github.com/DevJamHub/Creativo/issues/47) · [#48](https://github.com/DevJamHub/Creativo/issues/48) · [#49](https://github.com/DevJamHub/Creativo/issues/49)
+
 ## Siapa mengerjakan apa
 
 | Anggota | Pekerjaan | Bukti |
@@ -20,7 +22,9 @@
 | Sigit Novriyanto (@DevJamHub) | Tugas Task 01–03 (Lowongan remote dari Himalayas Jobs API), kunci biometrik, test API dan keamanan, `week4.md` | c78f909 |
 | Aditiya Al Bayhaqy (@baybayyy26) | Menyesuaikan dan menguji ulang PR #24–#27 dengan kode terbaru: pencarian profesional ke semua pengguna, unit test + job CI `test`, audit dependensi, `CONTRIBUTING.md` | PR #24–#27 (digabung ke #28) |
 
-## User story yang selesai / dikerjakan
+## Fitur tambahan yang dibuat minggu ini (Bagian B)
+
+Bukan bagian dari tugas week ini. Dicatat terpisah per kelompok fitur di [📌 Peta Issues #59](https://github.com/DevJamHub/Creativo/issues/59).
 
 [#20](https://github.com/DevJamHub/Creativo/issues/20) · [#21](https://github.com/DevJamHub/Creativo/issues/21) · [#22](https://github.com/DevJamHub/Creativo/issues/22) · [#23](https://github.com/DevJamHub/Creativo/issues/23)
 

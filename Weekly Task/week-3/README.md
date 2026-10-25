@@ -13,6 +13,8 @@
 - [x] Task 03 — Validate the Security
 - [x] Penjelasan lengkap: [`week3.md`](../week3.md)
 
+**Issue per task (sub-issue):** [#44](https://github.com/DevJamHub/Creativo/issues/44) · [#45](https://github.com/DevJamHub/Creativo/issues/45) · [#46](https://github.com/DevJamHub/Creativo/issues/46)
+
 ## Siapa mengerjakan apa
 
 | Anggota | Pekerjaan | Bukti |
@@ -20,7 +22,9 @@
 | Sigit Novriyanto (@DevJamHub) | Tugas Task 01–03 dan `week3.md`; fitur v3–v4 (upload & feed, MVC, fitur sosial, pesan) | f112b2c, 68d6862, 698d534 |
 | Aditiya Al Bayhaqy (@baybayyy26) | Alur kerja tim di GitHub (3 Okt): template issue/PR dan CI (PR #1, di-push dan di-merge Sigit), backlog user story #2–#23, papan kerja, dan PR #24–#27 | PR #1, issue #2–#23 |
 
-## User story yang selesai / dikerjakan
+## Fitur tambahan yang dibuat minggu ini (Bagian B)
+
+Bukan bagian dari tugas week ini. Dicatat terpisah per kelompok fitur di [📌 Peta Issues #59](https://github.com/DevJamHub/Creativo/issues/59).
 
 [#3](https://github.com/DevJamHub/Creativo/issues/3) · [#6](https://github.com/DevJamHub/Creativo/issues/6) · [#7](https://github.com/DevJamHub/Creativo/issues/7) · [#8](https://github.com/DevJamHub/Creativo/issues/8) · [#9](https://github.com/DevJamHub/Creativo/issues/9) · [#10](https://github.com/DevJamHub/Creativo/issues/10) · [#11](https://github.com/DevJamHub/Creativo/issues/11) · [#12](https://github.com/DevJamHub/Creativo/issues/12) · [#13](https://github.com/DevJamHub/Creativo/issues/13) · [#14](https://github.com/DevJamHub/Creativo/issues/14) · [#15](https://github.com/DevJamHub/Creativo/issues/15) · [#16](https://github.com/DevJamHub/Creativo/issues/16) · [#17](https://github.com/DevJamHub/Creativo/issues/17) · [#18](https://github.com/DevJamHub/Creativo/issues/18) · [#19](https://github.com/DevJamHub/Creativo/issues/19)
 

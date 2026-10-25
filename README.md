@@ -25,7 +25,22 @@ Cek sebelum commit:
 ```bash
 npx tsc --noEmit
 npx expo lint
+npm test          # unit test (jest-expo), file di src/__tests__/
 ```
+
+## Alur kerja tim
+
+Pekerjaan dicatat sebagai issue user story, dikerjakan di branch terpisah, lalu masuk ke `main` lewat pull request yang dicek CI dan di-review teman. Aturan lengkapnya (format issue, branch, commit, PR, CI, review, dan konvensi kode) ada di **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
+| Ingin melihat | Buka |
+|---|---|
+| Daftar user story | [Issue berlabel `feature`](https://github.com/DevJamHub/Creativo/issues?q=is%3Aissue%20label%3Afeature) |
+| Semua pekerjaan (fitur, bug, dokumentasi, test) | [Issues](https://github.com/DevJamHub/Creativo/issues?q=is%3Aissue) |
+| Target per tahap | [Milestones](https://github.com/DevJamHub/Creativo/milestones): `MVP`, lalu `Rilis 1` |
+| Papan kerja (Todo → In Progress → Review → Done) | [Creativo Board](https://github.com/users/baybayyy26/projects/2) |
+| Riwayat perubahan yang sudah masuk | [Pull request yang di-merge](https://github.com/DevJamHub/Creativo/pulls?q=is%3Apr%20is%3Amerged) |
+
+**Tim:** Sigit Novriyanto ([@DevJamHub](https://github.com/DevJamHub)) dan Aditiya Al Bayhaqy ([@baybayyy26](https://github.com/baybayyy26)).
 
 ## Struktur (MVC)
 
@@ -45,7 +60,7 @@ src/
 ├── services/       Akses data ke Supabase (Auth, database, storage) dan API publik
 │   ├── supabase.ts         client
 │   ├── auth.service.ts     login/daftar/OAuth/reset + simpan profil
-│   ├── posts.service.ts    postingan, unggah foto, suka, komentar
+│   ├── posts.service.ts    postingan, unggah foto, suka, komentar, cari profesional
 │   ├── social.service.ts   ikuti/berhenti, notifikasi + realtime
 │   ├── messages.service.ts pesan langsung, inbox, tanda dibaca + realtime
 │   ├── storage.ts          local storage + secure storage (token login terenkripsi)
@@ -58,12 +73,13 @@ src/
 │   ├── MessagesProvider.tsx / useChat.ts   inbox dan satu percakapan
 │   ├── useConnections.ts               pengikut/koneksi user mana pun + koneksi bersama
 │   ├── useJobs.ts                      lowongan: loading → berhasil / gagal, muat ulang
-│   └── useComments.ts                  komentar satu postingan: balas, suka, hapus
+│   ├── useComments.ts                  komentar satu postingan: balas, suka, hapus
+│   └── useProfessionalSearch.ts        pencarian profesional di Beranda (di database, 30 per halaman)
 ├── views/          Komponen tampilan yang bisa dipakai ulang
-│   ├── ui/          tombol, teks, chip, avatar, toast, LoadingState, ErrorState, DataStatus...
+│   ├── ui/          tombol, teks, chip, avatar, toast, LoadingState, ErrorState, DataStatus, skeleton (kerangka saat memuat)...
 │   ├── jobs/        JobCard
 │   ├── auth/        komponen layar masuk/daftar
-│   ├── feed/        PostCard, PostGrid, ImageCarousel, CommentItem, ProfessionalTile
+│   ├── feed/        PostCard, PostGrid, ImageCarousel, CommentItem, ProfessionalTile, ShowcaseSkeleton
 │   ├── profile/     ProfileHeader, ProfileTabs, PersonRow, FollowButton, shareProfile
 │   ├── messages/    ConversationRow
 │   ├── navigation/  TabBar
@@ -81,4 +97,4 @@ Aturan alurnya: **app → controllers → services → Supabase / API**. `models
 
 - Semua teks di aplikasi berbahasa Indonesia. Komentar kode tetap berbahasa Inggris.
 - Postingan disimpan di tabel `posts` dan foto di bucket storage publik `posts`, di folder `<user_id>/`.
-- Profil orang lain dibaca lewat fungsi `public_profiles()`, sehingga email tidak pernah terbuka ke user lain.
+- Profil orang lain dibaca lewat fungsi `public_profiles()`, sehingga email tidak pernah terbuka ke user lain. Pencarian di Beranda memakai `search_professionals()`, yang juga hanya mengembalikan kolom publik, menjangkau semua pengguna, dan dimuat per halaman.

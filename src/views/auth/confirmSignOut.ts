@@ -3,8 +3,8 @@
 import { Alert, Platform } from 'react-native';
 
 export function confirmSignOut(onConfirm: () => void) {
-  const title = 'Keluar dari Creativo?';
-  const message = 'Sesi login di perangkat ini akan dihapus. Kamu perlu masuk lagi untuk memakai aplikasi.';
+  const title = 'Keluar';
+  const message = 'Apakah kamu yakin ingin keluar? Token login di perangkat ini akan dihapus dan kamu perlu masuk lagi.';
 
   if (Platform.OS === 'web') {
     if (window.confirm(`${title}\n${message}`)) onConfirm();

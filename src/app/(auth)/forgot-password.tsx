@@ -1,13 +1,16 @@
-// Forgot Password screen: requests a password reset email via Supabase Auth.
+// Forgot password, in two steps:
+//   1. Email      POST /auth/forgot-password → a 6-digit code is "emailed"
+//                 (the mock API prints it in its terminal, standing in for a real email)
+//   2. New password  code + new password → POST /auth/reset-password → back to Login
+// After a reset every old login token and biometric login stops working.
 
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
-import { colors, radius, spacing } from '@/theme';
-import { emailError as validateEmail } from '@/utils/validation';
+import { colors, spacing } from '@/theme';
+import { confirmPasswordError, emailError, MIN_PASSWORD_LENGTH, newPasswordError, resetCodeError } from '@/utils/validation';
 import { AuthInput } from '@/views/auth/AuthInput';
 import { AuthScreen } from '@/views/auth/AuthScreen';
 import { ErrorBanner } from '@/views/auth/ErrorBanner';
@@ -15,92 +18,145 @@ import { SubmitButton } from '@/views/auth/SubmitButton';
 import { focusRing } from '@/views/auth/focus';
 import { AppText } from '@/views/ui/AppText';
 
+type Field = 'code' | 'password' | 'confirmPassword';
+
 export default function ForgotPasswordScreen() {
-  const { sendPasswordReset, pending } = useAuthContext();
+  const { requestPasswordReset, resetPassword, pending } = useAuthContext();
 
+  const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState<string | undefined>();
+  const [emailInvalid, setEmailInvalid] = useState<string | undefined>();
+  const [values, setValues] = useState<Record<Field, string>>({ code: '', password: '', confirmPassword: '' });
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, string>>>({});
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
 
-  async function handleReset() {
-    setError(null);
-    const invalid = validateEmail(email);
-    setEmailError(invalid);
-    if (invalid) return;
-
-    const result = await sendPasswordReset(email.trim());
-    if (!result) return;
-    if (result.error) setError(result.error);
-    else setSent(true);
+  function setField(field: Field, text: string) {
+    setValues((v) => ({ ...v, [field]: text }));
+    if (fieldErrors[field]) setFieldErrors((e) => ({ ...e, [field]: undefined }));
   }
 
-  if (sent) {
-    return (
-      <AuthScreen showBack={false} centered>
-        <View style={styles.sent}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="mail-outline" size={36} color={colors.primary} />
-          </View>
-          <AppText variant="h2" color={colors.ink} align="center" accessibilityRole="header">
-            Cek Kotak Masuk Kamu
-          </AppText>
-          <AppText variant="body" color={colors.textMuted} align="center">
-            Jika ada akun yang terdaftar dengan{' '}
-            <AppText variant="bodyStrong" color={colors.ink}>
-              {email.trim()}
-            </AppText>
-            , kami telah mengirim tautan untuk mengatur ulang kata sandi kamu.
-          </AppText>
-          <View style={styles.hint}>
-            <AppText variant="caption" color={colors.textSubtle} align="center">
-              Tidak menerimanya? Cek folder spam, atau coba lagi dalam satu menit.
-            </AppText>
-          </View>
-        </View>
+  async function sendCode() {
+    setError(null);
+    const invalid = emailError(email);
+    setEmailInvalid(invalid);
+    if (invalid) return;
+    const result = await requestPasswordReset(email.trim().toLowerCase());
+    if (!result) return;
+    if (result.error) setError(result.error);
+    else setStep('code');
+  }
 
-        <SubmitButton label="Kembali ke Halaman Masuk" onPress={() => router.replace('/login')} />
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setSent(false)}
-          style={(s) => [styles.retry, focusRing(s)]}>
-          <AppText variant="bodyStrong" color={colors.primary}>
-            Gunakan email lain
-          </AppText>
-        </Pressable>
+  async function saveNewPassword() {
+    setError(null);
+    const errs: Partial<Record<Field, string>> = {
+      code: resetCodeError(values.code),
+      password: newPasswordError(values.password),
+      confirmPassword: confirmPasswordError(values.password, values.confirmPassword),
+    };
+    setFieldErrors(errs);
+    if (Object.values(errs).some(Boolean)) return;
+
+    const address = email.trim().toLowerCase();
+    const result = await resetPassword(address, values.code.trim(), values.password);
+    if (!result) return;
+    if (result.error) setError(result.error);
+    else router.replace({ pathname: '/login', params: { email: address, reset: '1' } });
+  }
+
+  if (step === 'code') {
+    return (
+      <AuthScreen title="Buat Kata Sandi Baru" subtitle={`Masukkan kode 6 angka yang dikirim ke ${email.trim()}.`}>
+        <View style={styles.form}>
+          <ErrorBanner
+            tone="info"
+            message="Mode demo: belum ada email sungguhan. Kode reset muncul di terminal tempat server Creativo berjalan."
+          />
+          <AuthInput
+            label="Kode Reset"
+            icon="keypad-outline"
+            placeholder="6 angka"
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={6}
+            value={values.code}
+            onChangeText={(t) => setField('code', t.replace(/\D/g, ''))}
+            error={fieldErrors.code}
+          />
+          <AuthInput
+            label="Kata Sandi Baru"
+            icon="lock-closed-outline"
+            placeholder={`Minimal ${MIN_PASSWORD_LENGTH} karakter, huruf dan angka`}
+            secureTextEntry
+            autoComplete="new-password"
+            textContentType="newPassword"
+            value={values.password}
+            onChangeText={(t) => setField('password', t)}
+            error={fieldErrors.password}
+          />
+          <AuthInput
+            label="Konfirmasi Kata Sandi Baru"
+            icon="lock-closed-outline"
+            placeholder="Ulangi kata sandi baru"
+            secureTextEntry
+            autoComplete="new-password"
+            textContentType="newPassword"
+            returnKeyType="go"
+            onSubmitEditing={saveNewPassword}
+            value={values.confirmPassword}
+            onChangeText={(t) => setField('confirmPassword', t)}
+            error={fieldErrors.confirmPassword}
+          />
+
+          <ErrorBanner message={error} />
+
+          <SubmitButton
+            label="Simpan Kata Sandi"
+            loadingLabel="Menyimpan..."
+            loading={pending === 'reset'}
+            disabled={pending !== null}
+            onPress={saveNewPassword}
+          />
+          <Pressable accessibilityRole="button" onPress={sendCode} style={(s) => [styles.again, focusRing(s)]}>
+            <AppText variant="bodyStrong" color={colors.primary}>
+              Kirim ulang kode
+            </AppText>
+          </Pressable>
+        </View>
       </AuthScreen>
     );
   }
 
   return (
     <AuthScreen
-      title="Atur Ulang Kata Sandi"
-      subtitle="Masukkan email yang terhubung dengan akun Creativo kamu, kami akan mengirimkan tautan untuk mengatur ulang kata sandi.">
+      title="Lupa Kata Sandi"
+      subtitle="Masukkan email akun Creativo kamu. Kami akan mengirim kode untuk membuat kata sandi baru.">
       <View style={styles.form}>
         <AuthInput
           label="Email"
-          placeholder="Masukkan email kamu"
+          icon="mail-outline"
+          placeholder="Masukkan email"
           keyboardType="email-address"
           autoComplete="email"
           textContentType="emailAddress"
           returnKeyType="send"
-          onSubmitEditing={handleReset}
+          onSubmitEditing={sendCode}
           value={email}
           onChangeText={(t) => {
             setEmail(t);
-            if (emailError) setEmailError(undefined);
+            if (emailInvalid) setEmailInvalid(undefined);
           }}
-          error={emailError}
+          error={emailInvalid}
         />
 
         <ErrorBanner message={error} />
 
         <SubmitButton
-          label="Kirim Tautan"
+          label="Kirim Kode"
           loadingLabel="Mengirim..."
           loading={pending === 'reset'}
           disabled={pending !== null}
-          onPress={handleReset}
+          onPress={sendCode}
         />
       </View>
 
@@ -122,23 +178,6 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: spacing.md },
+  again: { alignSelf: 'center', paddingVertical: spacing.sm },
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: spacing.xxl },
-  sent: { alignItems: 'center', gap: spacing.md, marginBottom: spacing.xxl },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  hint: {
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  retry: { alignSelf: 'center', paddingVertical: spacing.md },
 });

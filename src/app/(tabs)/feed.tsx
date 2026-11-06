@@ -4,7 +4,7 @@
 
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
@@ -17,6 +17,7 @@ import { PostCard } from '@/views/feed/PostCard';
 import { AppText } from '@/views/ui/AppText';
 import { EmptyState } from '@/views/ui/EmptyState';
 import { ErrorState } from '@/views/ui/ErrorState';
+import { LoadingState } from '@/views/ui/LoadingState';
 import { IconButton } from '@/views/ui/IconButton';
 import { SegmentedControl } from '@/views/ui/SegmentedControl';
 import { Toast, useToast } from '@/views/ui/Toast';
@@ -27,7 +28,7 @@ const feedViews: FeedView[] = ['forYou', 'following', 'field'];
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { profile, user } = useAuthContext();
-  const { posts, profiles, likedIds, state, error, refreshing, refresh, remove, toggleLike } = usePosts();
+  const { posts, profiles, likedIds, state, error, errorKind, refreshing, refresh, remove, toggleLike } = usePosts();
   const profession = getProfession(profile?.profession);
   const { isFollowing } = useSocial();
   const [view, setView] = useState<FeedView>('forYou');
@@ -115,9 +116,9 @@ export default function FeedScreen() {
         ListHeaderComponent={header}
         ListEmptyComponent={
           state === 'loading' ? (
-            <ActivityIndicator color={colors.primary} style={styles.loading} accessibilityLabel="Memuat feed" />
+            <LoadingState label="Memuat feed…" />
           ) : state === 'error' ? (
-            <ErrorState title="Gagal memuat feed" message={error} onRetry={refresh} retrying={refreshing} />
+            <ErrorState kind={errorKind} message={error} onRetry={refresh} retrying={refreshing} />
           ) : (
             <EmptyState
               icon={profession.showcase.icon}
@@ -150,5 +151,4 @@ const styles = StyleSheet.create({
   },
   headerBlock: { gap: spacing.md, paddingTop: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  loading: { marginTop: spacing.xxl },
 });

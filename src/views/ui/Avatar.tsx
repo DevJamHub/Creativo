@@ -1,4 +1,5 @@
 // Profile photo with an initials fallback (used when there is no photo or it fails to load).
+// Uploaded photos come from the API as "/uploads/<file>", so they are turned into full addresses.
 
 import { Image } from 'expo-image';
 import { useState } from 'react';
@@ -6,6 +7,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AppText } from './AppText';
 
+import { assetUrl } from '@/services/api';
 import { colors } from '@/theme';
 
 export interface AvatarProps {
@@ -32,7 +34,7 @@ export function Avatar({ uri, name, size = 48, ring, style }: AvatarProps) {
     <View style={[styles.wrap, shape, ring && { borderWidth: Math.max(3, size / 20), borderColor: colors.background }, style]}>
       {uri && !failed ? (
         <Image
-          source={{ uri }}
+          source={{ uri: assetUrl(uri) }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           transition={200}

@@ -1,0 +1,206 @@
+[
+  {
+    "id": "9012cf5b-75ad-50c7-aa54-4964831835cf",
+    "username": "rinakartika",
+    "email": "rina@creativo.id",
+    "full_name": "Rina Kartika",
+    "password_hash": "scrypt$1b8360b30abd58294372cbb8bba16a30$23b99e799d9657c621824f44f0a622361157f6ed55f4b523458105580f75980c24ed15f27a1a7e5fdfe920f8f75e0a8dc17665cc81692a6764bea2971227d379",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Rina%20Kartika&size=256&backgroundColor=f1f0ec",
+    "profession": "uiux",
+    "specializations": [
+      "Mobile UI",
+      "Design System",
+      "Riset UX"
+    ],
+    "experience_level": "senior",
+    "headline": "Product designer yang merancang aplikasi mobile yang ramah pengguna",
+    "open_to_work": true,
+    "onboarded_at": "2026-09-11T02:00:00.000Z",
+    "created_at": "2026-09-11T01:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "1dffb406-baca-5563-a28b-853a5d69ba59",
+    "username": "bagaspratama",
+    "email": "bagas@creativo.id",
+    "full_name": "Bagas Pratama",
+    "password_hash": "scrypt$082f0440d48f47bee3d1f364de252e64$f8f20a63925a4a9f5ffc0d68f291ce6ca71738e8b31c90d2b0ea703948a810725a8513f283e3111ed32ac6fbb7e3f709f5892e5baa30c018908dc38c4e2cd808",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Bagas%20Pratama&size=256&backgroundColor=f1f0ec",
+    "profession": "informatics",
+    "specializations": [
+      "Aplikasi Mobile",
+      "Backend & APIs"
+    ],
+    "experience_level": "mid",
+    "headline": "Mobile developer React Native & Node.js",
+    "open_to_work": true,
+    "onboarded_at": "2026-09-12T08:00:00.000Z",
+    "created_at": "2026-09-12T07:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "578ffd38-4cf2-5a19-a147-db56506462d5",
+    "username": "dewilestari",
+    "email": "dewi@creativo.id",
+    "full_name": "Dewi Lestari",
+    "password_hash": "scrypt$a08587591033af298514665ba455f11a$564aef2108505f92f6edc8d1ffbe245a2259d000c17d00873865508341889e8b8ae66b3b8e3ebaeb48cb34f98273ab3c9ad02bd18031bd4f3e5051f48c507a41",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Dewi%20Lestari&size=256&backgroundColor=f1f0ec",
+    "profession": "photographer",
+    "specializations": [
+      "Potret",
+      "Pernikahan"
+    ],
+    "experience_level": "senior",
+    "headline": "Fotografer potret dan pernikahan di Yogyakarta",
+    "open_to_work": false,
+    "onboarded_at": "2026-09-13T14:00:00.000Z",
+    "created_at": "2026-09-13T13:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "e7970a3f-9d69-528c-a556-cc5e3648cc76",
+    "username": "andisaputra",
+    "email": "andi@creativo.id",
+    "full_name": "Andi Saputra",
+    "password_hash": "scrypt$a43e05ca1eb044f2f26b4fc432e39948$7dcdb7a5fb5affcc1860b06cfe98e3d006092ca4a969af5f28377353b876e7b6f800e42824ec0e5e47a702db1150a7655c5faeecdf3eac557d6b2bfbde582637",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Andi%20Saputra&size=256&backgroundColor=f1f0ec",
+    "profession": "architect",
+    "specializations": [
+      "Hunian",
+      "Desain Berkelanjutan",
+      "Visualisasi 3D"
+    ],
+    "experience_level": "lead",
+    "headline": "Arsitek rumah tropis yang hemat energi",
+    "open_to_work": false,
+    "onboarded_at": "2026-09-14T20:00:00.000Z",
+    "created_at": "2026-09-14T19:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "ca04ae29-9a4b-583e-aabd-9e3c78eeb05d",
+    "username": "mayaanggraini",
+    "email": "maya@creativo.id",
+    "full_name": "Maya Anggraini",
+    "password_hash": "scrypt$bc754dd91016b30c331314fb40f5d8c1$54b75491f07578fd922bdfd74813889ffd72466fd9b6d8695ce718c4dd963476eba79ebfd83f9bbd3df276fed679620d431391e499f7a73f947a4cd293b5daa9",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Maya%20Anggraini&size=256&backgroundColor=f1f0ec",
+    "profession": "graphic",
+    "specializations": [
+      "Branding",
+      "Ilustrasi",
+      "Tipografi"
+    ],
+    "experience_level": "mid",
+    "headline": "Desainer brand untuk UMKM lokal",
+    "open_to_work": true,
+    "onboarded_at": "2026-09-16T02:00:00.000Z",
+    "created_at": "2026-09-16T01:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "67048cdb-162e-5036-aee3-a4cc721dff7b",
+    "username": "fajarnugroho",
+    "email": "fajar@creativo.id",
+    "full_name": "Fajar Nugroho",
+    "password_hash": "scrypt$31bd981b4a70cc463abfcb39da9de3d4$fdce7c7230afe43fdf7a562b7effc2e033552e427c747faafa9ceb5df505eb047a9f899f38b90d8882fbee08307cb964721340aff3e99078af460ad38101a76c",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Fajar%20Nugroho&size=256&backgroundColor=f1f0ec",
+    "profession": "data",
+    "specializations": [
+      "Machine Learning",
+      "Visualisasi Data"
+    ],
+    "experience_level": "mid",
+    "headline": "Data scientist yang mengubah data jadi keputusan",
+    "open_to_work": true,
+    "onboarded_at": "2026-09-17T08:00:00.000Z",
+    "created_at": "2026-09-17T07:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "9c117caa-213e-5b84-a11f-3f06aaeb0796",
+    "username": "nadiaputri",
+    "email": "nadia@creativo.id",
+    "full_name": "Nadia Putri",
+    "password_hash": "scrypt$a24947d69322cd9ce148d138c018826f$54a845693bb29bf17ab9eaf43e6a8e9fc313c2cac4a4e314ac89faf0a6b3e42bfd1f6a6ac9cb34afb829f804c72dc649fd95d9b1e44ea73a930dd70d6341543a",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Nadia%20Putri&size=256&backgroundColor=f1f0ec",
+    "profession": "creator",
+    "specializations": [
+      "Video Pendek",
+      "Video Editing"
+    ],
+    "experience_level": "junior",
+    "headline": "Kreator video pendek tentang kuliner Nusantara",
+    "open_to_work": false,
+    "onboarded_at": "2026-09-18T14:00:00.000Z",
+    "created_at": "2026-09-18T13:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "f1ed8896-da4e-5c06-aa2e-47ce781ff57e",
+    "username": "rezamahendra",
+    "email": "reza@creativo.id",
+    "full_name": "Reza Mahendra",
+    "password_hash": "scrypt$c3d4ce0aa8a8226ed09eed73b5d84ee3$ad525a76291c771b52025ff089d5a8469574a9e3ab906b565f173f098c1b8fcc19ead3d5842db0a49f668b5c9219a899a4469eb4eaefce92374711122993e7c0",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Reza%20Mahendra&size=256&backgroundColor=f1f0ec",
+    "profession": "marketer",
+    "specializations": [
+      "Media Sosial",
+      "Iklan Performa",
+      "Copywriting"
+    ],
+    "experience_level": "senior",
+    "headline": "Growth marketer untuk brand lokal",
+    "open_to_work": false,
+    "onboarded_at": "2026-09-19T20:00:00.000Z",
+    "created_at": "2026-09-19T19:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "cc465153-4a06-542b-a684-07675c5fcb40",
+    "username": "intanpermata",
+    "email": "intan@creativo.id",
+    "full_name": "Intan Permata",
+    "password_hash": "scrypt$c6c416ed5dce5db6d7ba45b9a8ee64c3$046d8e15456213abd0e01a4562775e4e6e2f5d0fe6c0b394220ce9decb43f8d04f605ca5187b22fd9120480b2881260e621b072212f10462655d1ddc90340b1a",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Intan%20Permata&size=256&backgroundColor=f1f0ec",
+    "profession": "informatics",
+    "specializations": [
+      "Pengembangan Web",
+      "UI Engineering"
+    ],
+    "experience_level": "student",
+    "headline": "Mahasiswa Informatika, belajar web dan mobile",
+    "open_to_work": true,
+    "onboarded_at": "2026-09-21T02:00:00.000Z",
+    "created_at": "2026-09-21T01:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  },
+  {
+    "id": "aa347e79-2133-5d28-a4e6-feb965588c2e",
+    "username": "yogafirmansyah",
+    "email": "yoga@creativo.id",
+    "full_name": "Yoga Firmansyah",
+    "password_hash": "scrypt$a1f93c037809c985388e3c57f1cf48bf$69ed6c29be9089831f2ae87056eae925ff8e6dfe5b8ff21d5dd02575b60e7f8141aeb26d5bfe0a2ed3943c1cc105feb24144b0ff521bcffe9b7b7382f9078d11",
+    "avatar_url": "https://api.dicebear.com/9.x/notionists/png?seed=Yoga%20Firmansyah&size=256&backgroundColor=f1f0ec",
+    "profession": "creator",
+    "specializations": [
+      "Motion Graphics",
+      "Cinematography"
+    ],
+    "experience_level": "mid",
+    "headline": "Motion designer dan videografer",
+    "open_to_work": true,
+    "onboarded_at": "2026-09-22T08:00:00.000Z",
+    "created_at": "2026-09-22T07:00:00.000Z",
+    "tokens_valid_after": 0,
+    "biometric_tokens": []
+  }
+]

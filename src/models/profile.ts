@@ -1,11 +1,13 @@
-// Profile model: the signed-in user's own row, what they can edit, and other users' public card.
-// Mirrors public.profiles and public.public_profiles() in supabase/migrations.
+// Profile model: the signed-in user's own account, what they can edit, and other users' public card.
+// Matches what the Creativo API returns (GET /auth/me, GET /profiles) — see server/app.js.
 
 import type { ExperienceLevel } from '@/models/profession';
 
-/** The signed-in user's own profile row (RLS: own row only, since it holds the email). */
+/** The signed-in user's own profile (only you get it, since it holds the email). */
 export interface Profile {
   id: string;
+  /** Made from the email at sign-up; you can log in with it instead of the email */
+  username: string;
   full_name: string | null;
   email: string | null;
   avatar_url: string | null;
@@ -34,9 +36,10 @@ export interface OnboardingAnswers {
   headline: string | null;
 }
 
-/** Public columns of another user's profile — never the email. */
+/** Public fields of another user's profile — never the email. */
 export interface PublicProfile {
   id: string;
+  username: string;
   full_name: string | null;
   avatar_url: string | null;
   profession: string | null;

@@ -1,205 +1,127 @@
-// Posts service: the work professionals share to the feed (images + caption).
-// Images go to the public "posts" storage bucket under <author_id>/, rows to public.posts.
-// All errors come back as friendly Indonesian messages; details are only logged in development.
+// Posts service: the work professionals share to the feed (photos + caption), likes and comments.
+// Photos are uploaded first (POST /uploads, as base64), then the post is saved with their addresses
+// (POST /posts). Every endpoint here is protected: api() adds the access token to each request.
+// Errors come back as friendly Indonesian messages; details are only logged in development.
 
 import { MAX_POST_IMAGES, type Comment, type LocalImage, type Post, type PostKind } from '@/models/post';
 import type { PublicProfile } from '@/models/profile';
-import { supabase } from '@/services/supabase';
+import { api, assetUrl, toResult, type Result } from '@/services/api';
 
-const BUCKET = 'posts';
-
-type Result<T = void> = { data: T; error: null } | { data: null; error: string };
-
-function failure(message: string, err: unknown): { data: null; error: string } {
-  if (__DEV__) console.warn('[posts]', err);
-  return { data: null, error: message };
-}
-
-export function imageUrl(path: string): string {
-  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-}
+/** Full address of a post photo ("/uploads/…" from the API, or a web address). */
+export const imageUrl = assetUrl;
 
 /* ------------------------------------------------------------------ */
 /*  Reading                                                            */
 /* ------------------------------------------------------------------ */
 
-type PostRow = Omit<Post, 'like_count' | 'comment_count'>;
-type PostRowWithCounts = PostRow & { post_likes: { count: number }[]; post_comments: { count: number }[] };
-
-const withCounts = ({ post_likes, post_comments, ...row }: PostRowWithCounts): Post => ({
-  ...row,
-  like_count: post_likes[0]?.count ?? 0,
-  comment_count: post_comments[0]?.count ?? 0,
-});
-
 export async function fetchPosts(): Promise<Result<Post[]>> {
-  const { data, error } = await supabase
-    .from('posts')
-    .select('*, post_likes(count), post_comments(count)')
-    .order('created_at', { ascending: false })
-    .limit(100)
-    .returns<PostRowWithCounts[]>();
-  if (error) return failure('Gagal memuat postingan. Periksa koneksi internet kamu.', error);
-  return { data: (data ?? []).map(withCounts), error: null };
+  return toResult(await api<{ posts: Post[] }>('/posts'), (data) => data.posts);
 }
 
-/** Ids of the posts the user has liked, to fill in the hearts. */
-export async function fetchLikedPostIds(userId: string): Promise<Result<string[]>> {
-  const { data, error } = await supabase.from('post_likes').select('post_id').eq('user_id', userId);
-  if (error) return failure('Gagal memuat suka.', error);
-  return { data: data.map((row) => row.post_id as string), error: null };
+/** Ids of the posts you liked, to fill in the hearts. */
+export async function fetchLikedPostIds(): Promise<Result<string[]>> {
+  return toResult(await api<{ post_ids: string[] }>('/posts/liked'), (data) => data.post_ids);
 }
 
-type CommentRow = Omit<Comment, 'like_count'> & { comment_likes: { count: number }[] };
-
-/** All comments and replies of a post (oldest first), plus which of them the user liked. */
-export async function fetchComments(postId: string, userId: string): Promise<Result<{ comments: Comment[]; likedIds: string[] }>> {
-  const { data, error } = await supabase
-    .from('post_comments')
-    .select('*, comment_likes(count)')
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true })
-    .returns<CommentRow[]>();
-  if (error) return failure('Gagal memuat komentar. Periksa koneksi internet kamu.', error);
-
-  const comments = (data ?? []).map(({ comment_likes, ...row }) => ({ ...row, like_count: comment_likes[0]?.count ?? 0 }));
-  if (comments.length === 0) return { data: { comments, likedIds: [] }, error: null };
-
-  const { data: liked, error: likedError } = await supabase
-    .from('comment_likes')
-    .select('comment_id')
-    .eq('user_id', userId)
-    .in('comment_id', comments.map((c) => c.id));
-  // Hearts are a nice-to-have: show the comments even if they fail
-  if (likedError && __DEV__) console.warn('[posts] comment likes failed', likedError);
-  return { data: { comments, likedIds: (liked ?? []).map((row) => row.comment_id as string) }, error: null };
+/** All comments and replies of a post (oldest first), plus which of them you liked. */
+export async function fetchComments(postId: string): Promise<Result<{ comments: Comment[]; likedIds: string[] }>> {
+  const result = await api<{ comments: Comment[]; liked_ids: string[] }>(`/posts/${postId}/comments`);
+  return toResult(result, (data) => ({ comments: data.comments, likedIds: data.liked_ids }));
 }
 
 export async function fetchPublicProfiles(): Promise<Result<PublicProfile[]>> {
-  const { data, error } = await supabase.rpc('public_profiles');
-  if (error) return failure('Gagal memuat daftar profesional.', error);
-  return { data: (data as PublicProfile[] | null) ?? [], error: null };
+  return toResult(await api<{ profiles: PublicProfile[] }>('/profiles'), (data) => data.profiles);
 }
 
 /* ------------------------------------------------------------------ */
 /*  Writing                                                            */
 /* ------------------------------------------------------------------ */
 
-const extensionFor = (mime: string) => (mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg');
-
-async function uploadImage(authorId: string, image: LocalImage, index: number | string): Promise<string> {
-  const contentType = image.mimeType ?? 'image/jpeg';
-  const path = `${authorId}/${Date.now()}-${index}.${extensionFor(contentType)}`;
-  // fetch() reads local file:// (native) and blob: (web) URIs alike
-  const body = await (await fetch(image.uri)).arrayBuffer();
-  const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType, upsert: false });
-  if (error) throw error;
-  return path;
+/** The photo as base64 text, read from its local file:// (native) or blob: (web) address. */
+async function toBase64(image: LocalImage): Promise<string> {
+  const blob = await (await fetch(image.uri)).blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).replace(/^data:[^;]*;base64,/, ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
-export async function createPost(authorId: string, images: LocalImage[], caption: string, kind: PostKind): Promise<Result<Post>> {
-  const uploaded: string[] = [];
-  try {
-    for (const [i, image] of images.slice(0, MAX_POST_IMAGES).entries()) {
-      uploaded.push(await uploadImage(authorId, image, i));
-    }
-  } catch (err) {
-    await removeImages(uploaded);
-    return failure('Gagal mengunggah foto. Coba lagi dengan koneksi yang lebih stabil.', err);
-  }
+const mimeType = (image: LocalImage) => (image.mimeType === 'image/jpg' || !image.mimeType ? 'image/jpeg' : image.mimeType);
 
-  const { data, error } = await supabase
-    .from('posts')
-    .insert({ author_id: authorId, image_paths: uploaded, caption: caption.trim(), kind })
-    .select()
-    .single<PostRow>();
-  if (error) {
-    await removeImages(uploaded);
-    return failure('Gagal menyimpan postingan. Silakan coba lagi.', error);
+async function uploadImage(image: LocalImage): Promise<Result<string>> {
+  let base64: string;
+  try {
+    base64 = await toBase64(image);
+  } catch (err) {
+    if (__DEV__) console.warn('[posts] reading photo failed', err);
+    return { data: null, error: 'Foto tidak dapat dibaca. Pilih foto lain.' };
   }
-  return { data: { ...data, like_count: 0, comment_count: 0 }, error: null };
+  // Big photos take a while over Wi-Fi
+  const result = await api<{ path: string }>('/uploads', {
+    method: 'POST',
+    body: { base64, mime_type: mimeType(image) },
+    timeoutMs: 60_000,
+  });
+  return toResult(result, (data) => data.path);
 }
 
-/** Uploads a new profile photo into the user's folder and returns its public URL. */
-export async function uploadAvatar(userId: string, image: LocalImage): Promise<Result<string>> {
-  try {
-    return { data: imageUrl(await uploadImage(userId, image, 'avatar')), error: null };
-  } catch (err) {
-    return failure('Gagal mengunggah foto profil. Silakan coba lagi.', err);
+export async function createPost(images: LocalImage[], caption: string, kind: PostKind): Promise<Result<Post>> {
+  const paths: string[] = [];
+  for (const image of images.slice(0, MAX_POST_IMAGES)) {
+    const uploaded = await uploadImage(image);
+    if (uploaded.error !== null) return uploaded;
+    paths.push(uploaded.data);
   }
+  const result = await api<{ post: Post }>('/posts', { method: 'POST', body: { image_paths: paths, caption: caption.trim(), kind } });
+  return toResult(result, (data) => data.post);
+}
+
+/** Uploads a new profile photo and returns its address, to be saved with the profile. */
+export function uploadAvatar(image: LocalImage): Promise<Result<string>> {
+  return uploadImage(image);
 }
 
 /** Returns only the changed fields; the caller keeps the counts it already has. */
 export async function updateCaption(postId: string, caption: string): Promise<Result<Pick<Post, 'caption' | 'updated_at'>>> {
-  const { data, error } = await supabase
-    .from('posts')
-    .update({ caption: caption.trim() })
-    .eq('id', postId)
-    .select('caption, updated_at')
-    .single<Pick<Post, 'caption' | 'updated_at'>>();
-  if (error) return failure('Gagal menyimpan caption. Silakan coba lagi.', error);
-  return { data, error: null };
+  const result = await api<{ post: Post }>(`/posts/${postId}`, { method: 'PATCH', body: { caption: caption.trim() } });
+  return toResult(result, ({ post }) => ({ caption: post.caption, updated_at: post.updated_at }));
 }
 
-export async function deletePost(post: Post): Promise<Result> {
-  const { error } = await supabase.from('posts').delete().eq('id', post.id);
-  if (error) return failure('Gagal menghapus postingan. Silakan coba lagi.', error);
-  await removeImages(post.image_paths);
-  return { data: undefined, error: null };
+export async function deletePost(postId: string): Promise<Result> {
+  return toResult(await api(`/posts/${postId}`, { method: 'DELETE' }), () => undefined);
 }
 
 /* ------------------------------------------------------------------ */
 /*  Likes & comments                                                   */
 /* ------------------------------------------------------------------ */
 
-export async function likePost(postId: string, userId: string): Promise<Result> {
-  // upsert so a double tap that races the first request is not an error
-  const { error } = await supabase.from('post_likes').upsert({ post_id: postId, user_id: userId }, { ignoreDuplicates: true });
-  if (error) return failure('Gagal menyukai postingan.', error);
-  return { data: undefined, error: null };
+export async function likePost(postId: string): Promise<Result> {
+  return toResult(await api(`/posts/${postId}/like`, { method: 'POST' }), () => undefined);
 }
 
-export async function unlikePost(postId: string, userId: string): Promise<Result> {
-  const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId);
-  if (error) return failure('Gagal membatalkan suka.', error);
-  return { data: undefined, error: null };
+export async function unlikePost(postId: string): Promise<Result> {
+  return toResult(await api(`/posts/${postId}/like`, { method: 'DELETE' }), () => undefined);
 }
 
-export async function addComment(
-  postId: string,
-  authorId: string,
-  body: string,
-  parentId: string | null = null,
-): Promise<Result<Comment>> {
-  const { data, error } = await supabase
-    .from('post_comments')
-    .insert({ post_id: postId, author_id: authorId, body: body.trim(), parent_id: parentId })
-    .select()
-    .single<Omit<Comment, 'like_count'>>();
-  if (error) return failure(parentId ? 'Gagal mengirim balasan. Silakan coba lagi.' : 'Gagal mengirim komentar. Silakan coba lagi.', error);
-  return { data: { ...data, like_count: 0 }, error: null };
+export async function addComment(postId: string, body: string, parentId: string | null = null): Promise<Result<Comment>> {
+  const result = await api<{ comment: Comment }>(`/posts/${postId}/comments`, {
+    method: 'POST',
+    body: { body: body.trim(), parent_id: parentId },
+  });
+  return toResult(result, (data) => data.comment);
 }
 
-export async function likeComment(commentId: string, userId: string): Promise<Result> {
-  const { error } = await supabase.from('comment_likes').upsert({ comment_id: commentId, user_id: userId }, { ignoreDuplicates: true });
-  if (error) return failure('Gagal menyukai komentar.', error);
-  return { data: undefined, error: null };
+export async function likeComment(commentId: string): Promise<Result> {
+  return toResult(await api(`/comments/${commentId}/like`, { method: 'POST' }), () => undefined);
 }
 
-export async function unlikeComment(commentId: string, userId: string): Promise<Result> {
-  const { error } = await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId);
-  if (error) return failure('Gagal membatalkan suka.', error);
-  return { data: undefined, error: null };
+export async function unlikeComment(commentId: string): Promise<Result> {
+  return toResult(await api(`/comments/${commentId}/like`, { method: 'DELETE' }), () => undefined);
 }
 
+/** Deleting a top-level comment also deletes its replies. */
 export async function deleteComment(commentId: string): Promise<Result> {
-  const { error } = await supabase.from('post_comments').delete().eq('id', commentId);
-  if (error) return failure('Gagal menghapus komentar. Silakan coba lagi.', error);
-  return { data: undefined, error: null };
-}
-
-async function removeImages(paths: string[]) {
-  if (paths.length === 0) return;
-  const { error } = await supabase.storage.from(BUCKET).remove(paths);
-  if (error && __DEV__) console.warn('[posts] image cleanup failed', error);
+  return toResult(await api(`/comments/${commentId}`, { method: 'DELETE' }), () => undefined);
 }

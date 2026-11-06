@@ -7,12 +7,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useAuthContext } from '@/controllers/AuthProvider';
 import type { LocalImage, Post, PostKind } from '@/models/post';
 import type { PublicProfile } from '@/models/profile';
+import type { ApiErrorKind } from '@/services/http';
 import * as postsApi from '@/services/posts.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-const fetchAll = (userId: string) =>
-  Promise.all([postsApi.fetchPosts(), postsApi.fetchPublicProfiles(), postsApi.fetchLikedPostIds(userId)]);
+const fetchAll = () => Promise.all([postsApi.fetchPosts(), postsApi.fetchPublicProfiles(), postsApi.fetchLikedPostIds()]);
 type FetchResults = Awaited<ReturnType<typeof fetchAll>>;
 
 function usePostsStore() {
@@ -24,6 +24,8 @@ function usePostsStore() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState<{ userId: string; state: Exclude<LoadState, 'loading'> } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** offline, timeout, server… picks the error screen's icon and title */
+  const [errorKind, setErrorKind] = useState<ApiErrorKind | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Still loading until the data in memory was fetched for the user who is signed in now
@@ -31,7 +33,9 @@ function usePostsStore() {
 
   const apply = useCallback((userId: string, [postsResult, profilesResult, likedResult]: FetchResults) => {
     if (postsResult.error !== null || profilesResult.error !== null) {
-      setError(postsResult.error ?? profilesResult.error);
+      const failed = postsResult.error !== null ? postsResult : profilesResult;
+      setError(failed.error);
+      setErrorKind(failed.error !== null ? (failed.kind ?? null) : null);
       // A failed refresh keeps what is already on screen
       setLoaded((cur) => (cur?.userId === userId && cur.state === 'ready' ? cur : { userId, state: 'error' }));
       return;
@@ -41,6 +45,7 @@ function usePostsStore() {
     // Hearts are a nice-to-have: if they fail to load the feed still shows, just unfilled
     setLikedIds(new Set(likedResult.data ?? []));
     setError(null);
+    setErrorKind(null);
     setLoaded({ userId, state: 'ready' });
   }, []);
 
@@ -48,7 +53,7 @@ function usePostsStore() {
   useEffect(() => {
     if (!userId) return;
     let active = true;
-    fetchAll(userId).then((results) => {
+    fetchAll().then((results) => {
       if (active) apply(userId, results);
     });
     return () => {
@@ -57,7 +62,7 @@ function usePostsStore() {
   }, [userId, apply]);
 
   const load = useCallback(async () => {
-    if (userId) apply(userId, await fetchAll(userId));
+    if (userId) apply(userId, await fetchAll());
   }, [userId, apply]);
 
   const refresh = useCallback(async () => {
@@ -69,7 +74,7 @@ function usePostsStore() {
   const create = useCallback(
     async (images: LocalImage[], caption: string, kind: PostKind) => {
       if (!userId) return { error: 'Sesi kamu telah berakhir. Silakan masuk kembali.' };
-      const result = await postsApi.createPost(userId, images, caption, kind);
+      const result = await postsApi.createPost(images, caption, kind);
       if (result.error !== null) return { error: result.error };
       setPosts((cur) => [result.data, ...cur]);
       // A first post can come before our own card is in the list (e.g. right after onboarding)
@@ -87,7 +92,7 @@ function usePostsStore() {
   }, []);
 
   const remove = useCallback(async (post: Post) => {
-    const result = await postsApi.deletePost(post);
+    const result = await postsApi.deletePost(post.id);
     if (result.error !== null) return { error: result.error };
     setPosts((cur) => cur.filter((p) => p.id !== post.id));
     return { error: null };
@@ -113,7 +118,7 @@ function usePostsStore() {
       };
 
       flip(!liked);
-      const result = liked ? await postsApi.unlikePost(postId, userId) : await postsApi.likePost(postId, userId);
+      const result = liked ? await postsApi.unlikePost(postId) : await postsApi.likePost(postId);
       if (result.error !== null) {
         flip(liked);
         return { error: result.error };
@@ -133,6 +138,7 @@ function usePostsStore() {
       likedIds,
       state,
       error,
+      errorKind,
       refreshing,
       refresh,
       create,
@@ -141,7 +147,7 @@ function usePostsStore() {
       toggleLike,
       adjustCommentCount,
     }),
-    [posts, profiles, likedIds, state, error, refreshing, refresh, create, editCaption, remove, toggleLike, adjustCommentCount],
+    [posts, profiles, likedIds, state, error, errorKind, refreshing, refresh, create, editCaption, remove, toggleLike, adjustCommentCount],
   );
 }
 

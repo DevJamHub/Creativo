@@ -8,7 +8,6 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
-import { useBiometric } from '@/controllers/BiometricProvider';
 import { usePosts } from '@/controllers/PostsProvider';
 import { useSocial } from '@/controllers/SocialProvider';
 import type { IconName } from '@/models/icon';
@@ -50,14 +49,13 @@ export default function ProfileScreen() {
   const { profile, user, signOut, restartOnboarding, pending } = useAuthContext();
   const { posts } = usePosts();
   const { followers, connections } = useSocial();
-  const biometric = useBiometric();
   const [tab, setTab] = useState<ProfileTab>('karya');
   const [menuOpen, setMenuOpen] = useState(false);
   const toast = useToast();
   if (!profile || !user) return null; // the root layout only shows tabs once the profile is loaded
 
   const profession = getProfession(profile.profession);
-  const username = (profile.email ?? user.email ?? 'kamu').split('@')[0];
+  const username = profile.username;
   const name = profile.full_name || username;
   const level = experienceLabel(profile.experience_level);
   const joined = new Date(profile.created_at).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
@@ -137,7 +135,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
           </Pressable>
 
-          {/* The Creativo account and its JWT login session; sign out from there */}
+          {/* Login session (JWT), biometric login, what is stored on the device; log out from there */}
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/account')}
@@ -145,10 +143,10 @@ export default function ProfileScreen() {
             <Ionicons name="shield-checkmark-outline" size={20} color={colors.sky} />
             <View style={styles.flex}>
               <AppText variant="bodyStrong" color={colors.ink}>
-                Akun Creativo
+                Keamanan & Sesi
               </AppText>
               <AppText variant="caption" color={colors.textMuted}>
-                Sedang masuk · sesi aman dengan token JWT. Lihat sesi atau keluar.
+                Sesi login dengan token JWT, login sidik jari / Face ID, dan tombol keluar.
               </AppText>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
@@ -238,6 +236,22 @@ export default function ProfileScreen() {
             }}
           />
           <MenuRow
+            icon="settings-outline"
+            label="Pengaturan"
+            onPress={() => {
+              setMenuOpen(false);
+              router.push('/settings');
+            }}
+          />
+          <MenuRow
+            icon="shield-checkmark-outline"
+            label="Keamanan & Sesi"
+            onPress={() => {
+              setMenuOpen(false);
+              router.push('/account');
+            }}
+          />
+          <MenuRow
             icon="swap-horizontal-outline"
             label={pending === 'profile' ? 'Membuka...' : 'Ulangi onboarding'}
             onPress={() => {
@@ -245,18 +259,6 @@ export default function ProfileScreen() {
               restartOnboarding();
             }}
           />
-          {biometric.available && (
-            <MenuRow
-              icon={biometric.label === 'Face ID' ? 'scan-outline' : 'finger-print-outline'}
-              label={`Kunci dengan ${biometric.label}: ${biometric.enabled ? 'Aktif' : 'Nonaktif'}`}
-              onPress={async () => {
-                setMenuOpen(false);
-                const on = !biometric.enabled;
-                const result = await biometric.setEnabled(on);
-                toast.show(result.error ?? (on ? `Kunci ${biometric.label} aktif` : `Kunci ${biometric.label} dimatikan`));
-              }}
-            />
-          )}
           <MenuRow
             icon="log-out-outline"
             label={pending === 'signOut' ? 'Sedang keluar...' : 'Keluar'}

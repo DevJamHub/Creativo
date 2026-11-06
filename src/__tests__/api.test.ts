@@ -2,11 +2,13 @@
 // API state tests (Week 4 · Task 03): the five points of the "Handle API State" checklist.
 //   1. Request berhasil   2. JSON terbaca   3. Data tampil   4. Loading ditampilkan   5. Error ditangani
 // fetch() is mocked with responses shaped like the real Himalayas API, so these run offline with `npm test`.
+// The phone's connection check is simulated in jest.setup.ts (online unless a test says otherwise).
 
 import { formatSalary, jobKeyword, parseJobPage, plainText, truncate } from '@/models/job';
 import { jobsReducer, initialJobsState, type JobsState } from '@/controllers/useJobs';
 import { getJson } from '@/services/http';
 import { JOBS_SEARCH_URL, searchJobs } from '@/services/jobs.service';
+import { hasConnection } from '@/services/network';
 
 // One job as the API sends it (trimmed from a real response)
 const rawJob = {
@@ -150,7 +152,7 @@ describe('4. Loading ditampilkan: indikator muncul saat request diproses', () =>
   });
 
   it('"Coba lagi" saat belum ada data menampilkan loading lagi', () => {
-    const failed: JobsState = { ...initialJobsState, status: 'error', error: { kind: 'offline', status: null, message: '' } };
+    const failed: JobsState = { ...initialJobsState, status: 'error', error: { kind: 'network', status: null, message: '' } };
     expect(jobsReducer(failed, { type: 'request', mode: 'refresh' })).toEqual(initialJobsState);
   });
 });
@@ -168,12 +170,19 @@ describe('5. Error ditangani: pesan error tampil jika request gagal', () => {
     expect(result.error).toEqual({ kind, status: code, message });
   });
 
-  it('tanpa internet → pesan periksa koneksi, tanpa detail teknis', async () => {
+  it('server tidak bisa dihubungi → pesan periksa koneksi, tanpa detail teknis', async () => {
     fetchMock.mockRejectedValue(new TypeError('Network request failed'));
     const result = await searchJobs({ keyword: 'designer', indonesiaOnly: true });
-    expect(result.error?.kind).toBe('offline');
+    expect(result.error?.kind).toBe('network');
     expect(result.error?.message).toBe('Tidak dapat terhubung ke server. Periksa koneksi internet kamu.');
     expect(result.error?.message).not.toMatch(/TypeError|Network request failed/);
+  });
+
+  it('HP tanpa koneksi → pesan offline, request tidak dikirim', async () => {
+    jest.mocked(hasConnection).mockResolvedValueOnce(false);
+    const result = await searchJobs({ keyword: 'designer', indonesiaOnly: true });
+    expect(result.error).toEqual({ kind: 'offline', status: null, message: 'Tidak ada koneksi internet. Periksa koneksi kamu dan coba lagi.' });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('server terlalu lama → request dibatalkan (timeout)', async () => {

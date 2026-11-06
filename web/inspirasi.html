@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspirasi · Creativo</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#konten">Lewati ke konten utama</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Creativo, ke beranda">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span class="brand-name">Creativo</span>
+      </a>
+      <nav aria-label="Navigasi utama">
+        <ul class="nav-list">
+          <li><a href="index.html">Beranda</a></li>
+          <li><a href="karya.html">Karya</a></li>
+          <li><a href="inspirasi.html" aria-current="page">Inspirasi</a></li>
+          <li><a href="php/profesi.php">Profesi</a></li>
+          <li><a href="php/kreator.php">Kreator</a></li>
+          <li><a href="php/direktori.php">Direktori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Week 4: data comes from a REST API (js/api.js), not from the HTML -->
+  <main id="konten" class="container">
+    <section class="page-head" aria-labelledby="judul-inspirasi">
+      <h1 id="judul-inspirasi">Inspirasi foto</h1>
+      <p>Karya fotografer dari seluruh dunia, diambil langsung dari API publik Lorem Picsum.</p>
+    </section>
+
+    <nav class="toolbar search-row" aria-label="Halaman hasil">
+      <button id="sebelumnya" type="button" class="btn btn-ghost" disabled>&larr; Sebelumnya</button>
+      <p id="info-halaman" class="result-info" aria-live="polite">Halaman 1</p>
+      <button id="berikutnya" type="button" class="btn btn-ghost" disabled>Berikutnya &rarr;</button>
+    </nav>
+
+    <div id="status" class="state" role="status" aria-live="polite"></div>
+    <section aria-label="Hasil dari API">
+      <div id="galeri-inspirasi" class="gallery"></div>
+    </section>
+    <p class="result-info source-note">
+      Sumber data: <a href="https://picsum.photos/" target="_blank" rel="noopener">Lorem Picsum API</a> (foto dari Unsplash)
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; <span id="tahun">2026</span> Creativo · Kelompok DevJamHub</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/inspirasi.js"></script>
+</body>
+</html>

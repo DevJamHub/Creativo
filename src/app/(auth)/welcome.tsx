@@ -1,9 +1,9 @@
 // Auth landing / welcome screen.
-// First screen unauthenticated users see: a bold pitch, the professions Creativo is built for, and the ways in.
+// First screen logged-out users see: a bold pitch, the professions Creativo is built for, and the two ways in
+// (Masuk / Daftar), as in the Week 3 design.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -11,9 +11,6 @@ import { useAuthContext } from '@/controllers/AuthProvider';
 import { professions } from '@/models/profession';
 import { colors, radius, spacing } from '@/theme';
 import { AuthScreen } from '@/views/auth/AuthScreen';
-import { ErrorBanner } from '@/views/auth/ErrorBanner';
-import { OrDivider } from '@/views/auth/OrDivider';
-import { SocialButtons } from '@/views/auth/SocialButtons';
 import { Logo } from '@/views/brand/Logo';
 import { AppText } from '@/views/ui/AppText';
 import { Button } from '@/views/ui/Button';
@@ -23,7 +20,6 @@ const showcase = professions.filter((p) => p.id !== 'other').slice(0, 6);
 
 export default function WelcomeScreen() {
   const { pending } = useAuthContext();
-  const [error, setError] = useState<string | null>(null);
 
   return (
     <AuthScreen showBack={false} centered>
@@ -54,25 +50,22 @@ export default function WelcomeScreen() {
         </View>
 
         <View style={styles.actions}>
-          <SocialButtons onError={setError} />
-          <ErrorBanner message={error} />
-
-          <OrDivider />
-
-          {/* Creativo account: email + password, signed in with a JWT from the server */}
+          {/* Creativo account: email/username + password, logged in with a JWT from the server */}
           <Button
-            label="Masuk dengan Akun Creativo"
+            label="Masuk"
             icon="log-in-outline"
             size="lg"
             disabled={pending !== null}
+            accessibilityHint="Masuk dengan email atau username dan kata sandi"
             onPress={() => router.push('/login')}
           />
           <Button
-            label="Buat Akun Creativo"
+            label="Daftar"
             icon="person-add-outline"
             variant="secondary"
             size="lg"
             disabled={pending !== null}
+            accessibilityHint="Membuat akun Creativo baru"
             onPress={() => router.push('/signup')}
           />
         </View>

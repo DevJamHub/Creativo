@@ -1,6 +1,6 @@
 // Social state for the signed-in user: who you follow, who follows you, your koneksi
 // (people you follow each other with), and your notifications.
-// Following is optimistic; notifications arrive live through Supabase Realtime.
+// Following is optimistic; new notifications are picked up by asking the API every few seconds.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
@@ -37,7 +37,7 @@ function useSocialStore() {
       setFollowers(data.followers);
     });
     loadNotifications().then(apply);
-    const unsubscribe = social.subscribeToNotifications(userId, () => loadNotifications().then(apply));
+    const unsubscribe = social.subscribeToNotifications(() => loadNotifications().then(apply));
     return () => {
       active = false;
       unsubscribe();
@@ -69,7 +69,7 @@ function useSocialStore() {
         setFollowing((cur) => (follow ? [targetId, ...cur.filter((id) => id !== targetId)] : cur.filter((id) => id !== targetId)));
 
       set(!wasFollowing);
-      const result = wasFollowing ? await social.unfollow(userId, targetId) : await social.follow(userId, targetId);
+      const result = wasFollowing ? await social.unfollow(targetId) : await social.follow(targetId);
       if (result.error !== null) {
         set(wasFollowing);
         return { error: result.error };
@@ -85,7 +85,7 @@ function useSocialStore() {
     if (!userId || unreadCount === 0) return;
     const now = new Date().toISOString();
     setNotifications((cur) => cur.map((n) => (n.read_at ? n : { ...n, read_at: now })));
-    await social.markAllNotificationsRead(userId);
+    await social.markAllNotificationsRead();
   }, [userId, unreadCount]);
 
   return useMemo(

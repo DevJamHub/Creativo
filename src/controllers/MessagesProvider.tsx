@@ -1,11 +1,13 @@
 // Inbox state for the signed-in user: conversations and how many messages are unread.
-// New messages arrive live; the Teman tab shows a dot while anything is unread.
+// New messages are picked up by asking the API every few seconds; the Teman tab shows a dot while anything is unread.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { useAuthContext } from '@/controllers/AuthProvider';
 import type { Conversation } from '@/models/message';
 import * as messages from '@/services/messages.service';
+
+const INBOX_POLL_MS = 8_000;
 
 function useMessagesStore() {
   const { user } = useAuthContext();
@@ -20,7 +22,7 @@ function useMessagesStore() {
         if (active && result.data) setConversations(result.data);
       });
     load();
-    const unsubscribe = messages.subscribeToIncoming(userId, `inbox:${userId}`, load);
+    const unsubscribe = messages.subscribeToIncoming(load, INBOX_POLL_MS);
     return () => {
       active = false;
       unsubscribe();

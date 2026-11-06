@@ -1,196 +1,167 @@
 /// <reference types="jest" />
-// Security test cases (Week 3 · Task 03): the same five scenarios as the security test matrix.
-//   1. Credential benar  → LOGIN_SUCCESS     2. Credential salah → LOGIN_FAILED
-//   3. Input kosong      → VALIDATION_ERROR  4. Logout           → SESSION_CLEARED
-//   5. Data sensitif     → PROTECTED
-// Supabase is mocked, so these run offline with `npm test`. Try the same scenarios by hand in the app too.
+// Week 3 · Task 03 — Validate the Security. The five scenarios of the security test matrix:
+//   1. Credential benar → LOGIN_SUCCESS      2. Credential salah → LOGIN_FAILED
+//   3. Input kosong     → VALIDATION_ERROR   4. Logout           → SESSION_CLEARED
+//   5. Data sensitif    → PROTECTED
+// The app's own services talk to the real mock API (server/app.js), run inside the test on a copy of
+// the seed, so `npm test` needs no server and no network. SecureStore and AsyncStorage are simulated.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthApiError } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 
-import { signInWithEmail, signOut } from '@/services/auth.service';
-import { localKeys, localStore, secureSessionStorage } from '@/services/storage';
-import { supabase } from '@/services/supabase';
-import { emailError, passwordError } from '@/utils/validation';
+import * as auth from '@/services/auth.service';
+import { localKeys, localStore, secureKeys } from '@/services/storage';
+import { emailError, fullNameError, identifierError, newPasswordError, passwordError } from '@/utils/validation';
 
-// Mock factories run before imports, so they load modules with require()
-/* eslint-disable @typescript-eslint/no-require-imports */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+import { createTestServer } from '../../server/testing';
 
-// The device's Keychain / Keystore, kept in memory for the test
-jest.mock('expo-secure-store', () => {
-  const vault = new Map<string, string>();
-  return {
-    setItemAsync: jest.fn(async (key: string, value: string) => void vault.set(key, value)),
-    getItemAsync: jest.fn(async (key: string) => vault.get(key) ?? null),
-    deleteItemAsync: jest.fn(async (key: string) => void vault.delete(key)),
-  };
+const vault = (SecureStore as unknown as { __vault: Map<string, string> }).__vault;
+const DEMO = { email: 'rina@creativo.id', username: 'rinakartika', password: 'Creativo123' };
+
+let server: ReturnType<typeof createTestServer>;
+
+beforeAll(() => {
+  // The token flow is logged in development; keep the test output readable
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
-
-jest.mock('expo-crypto', () => ({
-  getRandomBytes: (n: number) => new Uint8Array(require('crypto').randomBytes(n)),
-}));
-
-/* eslint-enable @typescript-eslint/no-require-imports */
-
-jest.mock('@/services/supabase', () => ({
-  supabase: { auth: { signInWithPassword: jest.fn(), signOut: jest.fn() } },
-}));
-
-const auth = supabase.auth as unknown as { signInWithPassword: jest.Mock; signOut: jest.Mock };
-
-const SESSION_KEY = 'sb-test-auth-token';
-const session = JSON.stringify({
-  access_token: 'eyJhbGciOiJIUzI1NiJ9.rahasia-access-token',
-  refresh_token: 'rahasia-refresh-token',
-  user: { email: 'pengguna@creativo.id' },
-});
-
-// friendlyAuthError logs the raw error in development; keep the test output readable
-beforeAll(() => jest.spyOn(console, 'warn').mockImplementation(() => {}));
 
 beforeEach(async () => {
-  jest.clearAllMocks();
+  server = createTestServer();
+  globalThis.fetch = server.fetch as unknown as typeof fetch;
+  vault.clear();
   await AsyncStorage.clear();
+  jest.clearAllMocks();
 });
 
+afterEach(() => server.cleanup());
+
 describe('1. Credential benar → LOGIN_SUCCESS', () => {
-  it('masuk tanpa error', async () => {
-    auth.signInWithPassword.mockResolvedValue({ data: {}, error: null });
-    const result = await signInWithEmail('pengguna@creativo.id', 'katasandi123');
+  it('email + kata sandi benar: masuk, token diterima dan disimpan di SecureStore', async () => {
+    const result = await auth.login(DEMO.email, DEMO.password);
+
     expect(result.error).toBeNull();
+    expect(result.session?.profile.email).toBe(DEMO.email);
+    expect(SecureStore.setItemAsync).toHaveBeenCalledWith('access_token', result.session!.token);
+    expect(await auth.storedAccessToken()).toBe(result.session!.token);
+  });
+
+  it('username juga bisa dipakai untuk masuk (Email atau Username)', async () => {
+    const result = await auth.login(DEMO.username, DEMO.password);
+    expect(result.error).toBeNull();
+    expect(result.session?.profile.username).toBe(DEMO.username);
+  });
+
+  it('akun baru: daftar dulu, lalu masuk dengan akun itu', async () => {
+    expect((await auth.register('Sigit Uji', 'sigit.uji@creativo.id', 'Rahasia123')).error).toBeNull();
+    // Signing up does not log in by itself
+    expect(await auth.storedAccessToken()).toBeNull();
+
+    const result = await auth.login('sigit.uji@creativo.id', 'Rahasia123');
+    expect(result.error).toBeNull();
+    expect(result.session?.profile).toMatchObject({ full_name: 'Sigit Uji', username: 'sigit.uji', onboarded_at: null });
   });
 });
 
 describe('2. Credential salah → LOGIN_FAILED', () => {
-  it('ditolak dengan pesan yang jelas', async () => {
-    auth.signInWithPassword.mockResolvedValue({
-      data: {},
-      error: new AuthApiError('Invalid login credentials', 400, 'invalid_credentials'),
-    });
-    const result = await signInWithEmail('pengguna@creativo.id', 'salah');
-    expect(result.error).toBe('Email atau kata sandi salah.');
+  it('kata sandi salah: ditolak dengan pesan yang jelas, tidak ada token tersimpan', async () => {
+    const result = await auth.login(DEMO.email, 'SalahBanget1');
+    expect(result.session).toBeNull();
+    expect(result.error).toBe('Email/username atau kata sandi salah.');
+    expect(vault.has(secureKeys.accessToken)).toBe(false);
   });
 
-  it('tidak membocorkan informasi: tidak bilang email atau kata sandi yang salah, dan tanpa detail teknis', async () => {
-    auth.signInWithPassword.mockResolvedValue({
-      data: {},
-      error: new AuthApiError('Invalid login credentials', 400, 'invalid_credentials'),
-    });
-    const { error } = await signInWithEmail('pengguna@creativo.id', 'salah');
-    expect(error).not.toMatch(/invalid|credentials|400/i);
+  it('email yang tidak terdaftar mendapat pesan yang sama persis (tidak membocorkan akun mana yang ada)', async () => {
+    const unknown = await auth.login('tidak.ada@creativo.id', DEMO.password);
+    const wrong = await auth.login(DEMO.email, 'SalahBanget1');
+    expect(unknown.error).toBe(wrong.error);
+  });
+
+  it('5 kali salah berturut-turut: akun dikunci sementara (429), lalu bisa lagi setelah 1 menit', async () => {
+    for (let i = 0; i < 5; i++) await auth.login(DEMO.email, `Salah${i}xyz`);
+    const locked = await auth.login(DEMO.email, DEMO.password);
+    expect(locked.error).toMatch(/Terlalu banyak percobaan/);
+
+    server.clock.now += 61_000;
+    expect((await auth.login(DEMO.email, DEMO.password)).error).toBeNull();
   });
 });
 
 describe('3. Input kosong → VALIDATION_ERROR', () => {
-  it('email kosong ditolak sebelum dikirim ke server', () => {
-    expect(emailError('')).toBe('Email wajib diisi.');
-    expect(emailError('bukan-email')).toBe('Masukkan alamat email yang valid.');
-  });
-
-  it('kata sandi kosong ditolak sebelum dikirim ke server', () => {
+  it('validasi di aplikasi menangkap input kosong sebelum ada request', () => {
+    expect(identifierError('')).toBe('Email atau username wajib diisi.');
     expect(passwordError('')).toBe('Kata sandi wajib diisi.');
+    expect(identifierError('rina@')).toBe('Masukkan alamat email yang valid.');
+    expect(identifierError(DEMO.username)).toBeUndefined();
   });
 
-  it('input yang benar lolos validasi', () => {
-    expect(emailError('pengguna@creativo.id')).toBeUndefined();
-    expect(passwordError('katasandi123')).toBeUndefined();
+  it('aturan daftar: nama, email, dan kata sandi minimal 8 karakter berisi huruf dan angka', () => {
+    expect(fullNameError('  ')).toBe('Nama lengkap wajib diisi.');
+    expect(emailError('bukan-email')).toBe('Masukkan alamat email yang valid.');
+    expect(newPasswordError('pendek1')).toBe('Kata sandi minimal 8 karakter.');
+    expect(newPasswordError('hanyahuruf')).toBe('Kata sandi harus berisi huruf dan angka.');
+    expect(newPasswordError('Creativo123')).toBeUndefined();
+  });
+
+  it('server juga menolak input kosong (400), seandainya validasi aplikasi dilewati', async () => {
+    const result = await auth.login('', '');
+    expect(result.error).toBe('Email/username dan kata sandi wajib diisi.');
+    expect(server.requests.at(-1)).toMatchObject({ method: 'POST', path: '/auth/login' });
+  });
+
+  it('daftar dengan email yang sudah terdaftar atau kata sandi lemah ditolak', async () => {
+    expect((await auth.register('Rina Lagi', DEMO.email, 'Creativo123')).error).toBe('Email ini sudah terdaftar. Silakan masuk.');
+    expect((await auth.register('Budi', 'budi@creativo.id', '12345678')).error).toBe('Kata sandi harus berisi huruf dan angka.');
   });
 });
 
 describe('4. Logout → SESSION_CLEARED', () => {
-  it('memanggil logout Supabase', async () => {
-    auth.signOut.mockResolvedValue({ error: null });
-    expect((await signOut()).error).toBeNull();
-    expect(auth.signOut).toHaveBeenCalled();
+  it('token dihapus dari SecureStore dan dicabut di server', async () => {
+    const { session } = await auth.login(DEMO.email, DEMO.password);
+    const token = session!.token;
+
+    await auth.logout();
+
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('access_token');
+    expect(await auth.storedAccessToken()).toBeNull();
+    // A copy of the old token is useless now
+    const reused = await server.fetch('http://test/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+    expect(reused.status).toBe(401);
+    expect(await reused.json()).toMatchObject({ code: 'token_revoked' });
   });
 
-  it('menghapus sesi dari AsyncStorage dan kuncinya dari SecureStore', async () => {
-    await secureSessionStorage.setItem(SESSION_KEY, session);
-    await secureSessionStorage.removeItem(SESSION_KEY);
-
-    expect(await AsyncStorage.getItem(SESSION_KEY)).toBeNull();
-    expect(await SecureStore.getItemAsync(SESSION_KEY)).toBeNull();
-    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBeNull();
+  it('server tidak bisa dihubungi saat logout: token di perangkat tetap dihapus', async () => {
+    await auth.login(DEMO.email, DEMO.password);
+    globalThis.fetch = jest.fn().mockRejectedValue(new TypeError('Network request failed'));
+    await auth.logout();
+    expect(await auth.storedAccessToken()).toBeNull();
   });
 });
 
 describe('5. Data sensitif → PROTECTED', () => {
-  it('token tidak tersimpan sebagai teks biasa', async () => {
-    await secureSessionStorage.setItem(SESSION_KEY, session);
-    const stored = (await AsyncStorage.getItem(SESSION_KEY))!;
-
-    expect(stored).not.toContain('rahasia');
-    expect(stored).not.toContain('pengguna@creativo.id');
-    expect(stored).toMatch(/^[0-9a-f]+$/); // only ciphertext
+  it('kata sandi disimpan sebagai hash scrypt di users.json, tidak pernah sebagai teks biasa', async () => {
+    await auth.register('Sigit Uji', 'sigit.uji@creativo.id', 'RahasiaSekali9');
+    const file = server.readUsersFile();
+    expect(file).not.toContain('RahasiaSekali9');
+    expect(file).not.toContain(DEMO.password);
+    const users = JSON.parse(file) as { email: string; password_hash: string }[];
+    expect(users.find((u) => u.email === 'sigit.uji@creativo.id')?.password_hash).toMatch(/^scrypt\$[0-9a-f]{32}\$[0-9a-f]{128}$/);
   });
 
-  it('kunci enkripsi disimpan di SecureStore (Keychain / Keystore), bukan di AsyncStorage', async () => {
-    await secureSessionStorage.setItem(SESSION_KEY, session);
-    const key = await SecureStore.getItemAsync(SESSION_KEY);
-
-    expect(key).toMatch(/^[0-9a-f]{64}$/); // 256-bit AES key
-    expect(await AsyncStorage.getItem(SESSION_KEY)).not.toContain(key!);
+  it('respons API tidak pernah berisi hash kata sandi', async () => {
+    const { session } = await auth.login(DEMO.email, DEMO.password);
+    expect(JSON.stringify(session)).not.toMatch(/password|biometric_tokens/);
+    const profiles = await server.fetch('http://test/profiles', { headers: { Authorization: `Bearer ${session!.token}` } });
+    expect(JSON.stringify(await profiles.json())).not.toMatch(/password|@creativo\.id/);
   });
 
-  it('data dapat dibaca kembali oleh aplikasi', async () => {
-    await secureSessionStorage.setItem(SESSION_KEY, session);
-    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBe(session);
-  });
+  it('token hanya di SecureStore; AsyncStorage hanya berisi data biasa', async () => {
+    await auth.login(DEMO.email, DEMO.password);
+    await localStore.set(localKeys.textSize, 'large');
 
-  it('tanpa kunci dari SecureStore, data tidak bisa dibuka', async () => {
-    await secureSessionStorage.setItem(SESSION_KEY, session);
-    await SecureStore.deleteItemAsync(SESSION_KEY);
-    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBeNull();
-  });
-
-  it('sesi lama yang masih teks biasa dienkripsi otomatis, tanpa membuat pengguna logout', async () => {
-    await AsyncStorage.setItem(SESSION_KEY, session);
-    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBe(session);
-    expect(await AsyncStorage.getItem(SESSION_KEY)).not.toContain('rahasia');
-  });
-
-  it('data sesi dengan format lain tidak membuat error: dihapus, lalu pengguna masuk lagi', async () => {
-    // What a phone had under the session key: a JSON list of hex codes instead of our ciphertext
-    const foreign = JSON.stringify(Array.from({ length: 5 }, () => 'ab'.repeat(16)));
-    await AsyncStorage.setItem(SESSION_KEY, foreign);
-    await SecureStore.setItemAsync(SESSION_KEY, 'cd'.repeat(32));
-
-    await expect(secureSessionStorage.getItem(SESSION_KEY)).resolves.toBeNull();
-    expect(await AsyncStorage.getItem(SESSION_KEY)).toBeNull();
-    expect(await SecureStore.getItemAsync(SESSION_KEY)).toBeNull();
-  });
-
-  it('kunci yang tidak cocok tidak menghasilkan sesi palsu', async () => {
-    await secureSessionStorage.setItem(SESSION_KEY, session);
-    await SecureStore.setItemAsync(SESSION_KEY, 'cd'.repeat(32));
-    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBeNull();
-  });
-
-  it('membaca saat sesi sedang disimpan tidak merusak atau menghapus sesi', async () => {
-    const refreshed = session.replace('rahasia-access-token', 'rahasia-access-token-baru');
-    await secureSessionStorage.setItem(SESSION_KEY, session);
-
-    const [, read] = await Promise.all([
-      secureSessionStorage.setItem(SESSION_KEY, refreshed),
-      secureSessionStorage.getItem(SESSION_KEY),
-    ]);
-    expect(read).toBe(refreshed);
-    expect(await secureSessionStorage.getItem(SESSION_KEY)).toBe(refreshed);
-  });
-});
-
-describe('Data biasa → local storage', () => {
-  it('preferensi disimpan dan dibaca kembali', async () => {
-    await localStore.set(localKeys.feedView, 'following');
-    expect(await localStore.get(localKeys.feedView, 'forYou')).toBe('following');
-    expect(await AsyncStorage.getItem('creativo.feedView')).toBe('"following"');
-  });
-
-  it('memakai nilai default kalau belum ada yang disimpan', async () => {
-    expect(await localStore.get<string | null>(localKeys.biometricLock, null)).toBeNull();
+    const local = await AsyncStorage.multiGet(await AsyncStorage.getAllKeys());
+    expect(local).toEqual([['creativo.textSize', '"large"']]);
+    expect(JSON.stringify(local)).not.toMatch(/eyJ|Creativo123/);
+    expect([...vault.keys()]).toEqual(['access_token']);
   });
 });

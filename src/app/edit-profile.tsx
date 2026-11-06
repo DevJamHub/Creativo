@@ -1,6 +1,6 @@
 // Edit profil (modal): photo, name, bio, profession, experience level, focus, and whether you're
 // open to opportunities (shown to recruiters, like LinkedIn's #OpenToWork).
-// A new photo is uploaded first, then everything is saved to the profile row in one update.
+// A new photo is uploaded first (POST /uploads), then everything is saved in one update (PATCH /auth/me).
 
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
@@ -100,7 +100,7 @@ export default function EditProfileScreen() {
     let avatarUrl = profile.avatar_url;
     if (newPhoto) {
       setUploading(true);
-      const upload = await uploadAvatar(user.id, newPhoto);
+      const upload = await uploadAvatar(newPhoto);
       setUploading(false);
       if (upload.error !== null) {
         setError(upload.error);

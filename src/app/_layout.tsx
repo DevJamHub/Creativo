@@ -1,6 +1,6 @@
-// Root navigator. Which screens exist depends on where the user is:
-// signed out → auth screens · signed in but not introduced yet → onboarding · otherwise → the app.
-// With the biometric lock on, a lock screen covers everything until the fingerprint / face scan passes.
+// Root navigator. Which screens exist depends on the authentication state:
+// logged out → welcome / login / sign up · logged in but not introduced yet → onboarding · otherwise → the app.
+// A protected screen can't be opened without a login: Stack.Protected removes it from the navigator.
 
 import * as SplashScreen from 'expo-splash-screen';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
@@ -8,12 +8,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { AuthProvider, useAuthContext } from '@/controllers/AuthProvider';
-import { BiometricProvider, useBiometric } from '@/controllers/BiometricProvider';
+import { BiometricProvider } from '@/controllers/BiometricProvider';
 import { MessagesProvider } from '@/controllers/MessagesProvider';
 import { PostsProvider } from '@/controllers/PostsProvider';
+import { PreferencesProvider } from '@/controllers/PreferencesProvider';
 import { SocialProvider } from '@/controllers/SocialProvider';
 import { colors } from '@/theme';
-import { BiometricLockScreen } from '@/views/auth/BiometricLockScreen';
+import { OfflineBanner } from '@/views/ui/OfflineBanner';
 
 // Keep the splash screen up until we know who the user is
 SplashScreen.preventAutoHideAsync();
@@ -33,7 +34,6 @@ const navTheme = {
 
 function RootStack() {
   const { isAuthenticated, initializing, profileState, needsOnboarding } = useAuthContext();
-  const { locked } = useBiometric();
   const profileReady = isAuthenticated && profileState === 'ready';
 
   useEffect(() => {
@@ -41,62 +41,60 @@ function RootStack() {
   }, [initializing, profileState]);
 
   return (
-    <>
-      {/* Every screen draws its own header, so the native header is hidden */}
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-        {/* Decides where to go; also shows loading / profile errors */}
-        <Stack.Screen name="index" />
+    // Every screen draws its own header, so the native header is hidden
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+      {/* Decides where to go; also shows loading / profile errors */}
+      <Stack.Screen name="index" />
 
-        {/* Signed out: landing, login, sign up, forgot password */}
-        <Stack.Protected guard={!isAuthenticated}>
-          <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
-        </Stack.Protected>
+      {/* Logged out: welcome, login, sign up, forgot password */}
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+      </Stack.Protected>
 
-        {/* Signed in, first time (or changing profession): introduction */}
-        <Stack.Protected guard={profileReady && needsOnboarding}>
-          <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'fade' }} />
-        </Stack.Protected>
+      {/* Logged in, first time (or changing profession): introduction */}
+      <Stack.Protected guard={profileReady && needsOnboarding}>
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'fade' }} />
+      </Stack.Protected>
 
-        {/* Signed in and introduced: the application */}
-        <Stack.Protected guard={profileReady && !needsOnboarding}>
-          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-          <Stack.Screen name="upload" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="post/[id]/index" />
-          <Stack.Screen name="post/[id]/comments" />
-          <Stack.Screen name="post/[id]/edit" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="notifications" />
-          <Stack.Screen name="user/[id]/index" />
-          <Stack.Screen name="user/[id]/connections" />
-          <Stack.Screen name="chat/[id]" />
-          <Stack.Screen name="jobs" />
-          <Stack.Screen name="account" />
-        </Stack.Protected>
-
-        {/* Deep-link targets from Supabase emails / OAuth; they work in either state */}
-        <Stack.Screen name="auth/callback" options={{ animation: 'fade' }} />
-        <Stack.Screen name="reset-password" options={{ gestureEnabled: false }} />
-      </Stack>
-      {locked && <BiometricLockScreen />}
-    </>
+      {/* Logged in and introduced: the application */}
+      <Stack.Protected guard={profileReady && !needsOnboarding}>
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="upload" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="post/[id]/index" />
+        <Stack.Screen name="post/[id]/comments" />
+        <Stack.Screen name="post/[id]/edit" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="user/[id]/index" />
+        <Stack.Screen name="user/[id]/connections" />
+        <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="jobs" />
+        <Stack.Screen name="account" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="api-lab" />
+      </Stack.Protected>
+    </Stack>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <BiometricProvider>
-        <PostsProvider>
-          <SocialProvider>
-            <MessagesProvider>
-              <ThemeProvider value={navTheme}>
-                <StatusBar style="dark" />
-                <RootStack />
-              </ThemeProvider>
-            </MessagesProvider>
-          </SocialProvider>
-        </PostsProvider>
-      </BiometricProvider>
-    </AuthProvider>
+    <PreferencesProvider>
+      <AuthProvider>
+        <BiometricProvider>
+          <PostsProvider>
+            <SocialProvider>
+              <MessagesProvider>
+                <ThemeProvider value={navTheme}>
+                  <StatusBar style="dark" />
+                  <RootStack />
+                  <OfflineBanner />
+                </ThemeProvider>
+              </MessagesProvider>
+            </SocialProvider>
+          </PostsProvider>
+        </BiometricProvider>
+      </AuthProvider>
+    </PreferencesProvider>
   );
 }

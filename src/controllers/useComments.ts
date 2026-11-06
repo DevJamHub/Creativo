@@ -22,7 +22,7 @@ export function useComments(postId: string | undefined) {
   useEffect(() => {
     if (!postId || !userId) return;
     let active = true;
-    postsApi.fetchComments(postId, userId).then((result) => {
+    postsApi.fetchComments(postId).then((result) => {
       if (!active) return;
       setComments(result.data?.comments ?? []);
       setLikedIds(new Set(result.data?.likedIds ?? []));
@@ -41,7 +41,7 @@ export function useComments(postId: string | undefined) {
     async (body: string, parentId: string | null = null) => {
       if (!postId || !userId || !body.trim() || sending) return false;
       setSending(true);
-      const result = await postsApi.addComment(postId, userId, body, parentId);
+      const result = await postsApi.addComment(postId, body, parentId);
       setSending(false);
       if (result.error !== null) {
         setError(result.error);
@@ -55,7 +55,7 @@ export function useComments(postId: string | undefined) {
     [postId, userId, sending, adjustCommentCount],
   );
 
-  /** Deleting a top-level comment also deletes its replies (the database cascades). */
+  /** Deleting a top-level comment also deletes its replies (the server removes them together). */
   const remove = useCallback(
     async (comment: Comment) => {
       const result = await postsApi.deleteComment(comment.id);
@@ -88,9 +88,7 @@ export function useComments(postId: string | undefined) {
       };
 
       flip(!liked);
-      const result = liked
-        ? await postsApi.unlikeComment(comment.id, userId)
-        : await postsApi.likeComment(comment.id, userId);
+      const result = liked ? await postsApi.unlikeComment(comment.id) : await postsApi.likeComment(comment.id);
       if (result.error !== null) {
         flip(liked);
         setError(result.error);

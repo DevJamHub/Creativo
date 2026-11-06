@@ -1,4 +1,4 @@
-// Notification model: created by database triggers (see supabase/migrations) when someone
+// Notification model: created by the Creativo API (server/app.js → notify) when someone
 // likes or comments on your post, replies to or likes your comment, or follows you.
 
 import type { IconName } from '@/models/icon';

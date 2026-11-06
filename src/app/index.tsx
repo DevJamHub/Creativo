@@ -1,5 +1,6 @@
 // Entry route (and the anchor protected routes fall back to):
-// signed out → Welcome · no introduction yet → onboarding · otherwise → the dashboard.
+// logged out → Welcome (first visit) or Login (after logout / expired session)
+// · no introduction yet → onboarding · otherwise → Beranda.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Redirect } from 'expo-router';
@@ -11,12 +12,12 @@ import { AppText } from '@/views/ui/AppText';
 import { Button } from '@/views/ui/Button';
 
 export default function Index() {
-  const { isAuthenticated, initializing, profileState, needsOnboarding, retryProfile, signOut, pending } =
+  const { isAuthenticated, initializing, profileState, needsOnboarding, retryProfile, signOut, pending, exitReason } =
     useAuthContext();
 
-  // The splash screen stays up until the stored session has been read
+  // The splash screen stays up until the stored token has been read
   if (initializing) return null;
-  if (!isAuthenticated) return <Redirect href="/welcome" />;
+  if (!isAuthenticated) return <Redirect href={exitReason ? '/login' : '/welcome'} />;
 
   if (profileState === 'loading') {
     return (
@@ -26,7 +27,7 @@ export default function Index() {
     );
   }
 
-  // Signed in, but the profile could not be read (offline, misconfigured Supabase key...)
+  // Logged in, but the profile could not be read (server offline, phone on another Wi-Fi...)
   if (profileState === 'error') {
     return (
       <View style={styles.center}>
@@ -35,7 +36,7 @@ export default function Index() {
           Gagal memuat profil kamu
         </AppText>
         <AppText variant="body" color={colors.textMuted} align="center" style={styles.message}>
-          Periksa koneksi internet kamu, lalu coba lagi.
+          Pastikan server Creativo berjalan dan koneksi internet kamu aktif, lalu coba lagi.
         </AppText>
         <View style={styles.actions}>
           <Button label="Coba lagi" icon="refresh" onPress={retryProfile} />

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karya · Creativo</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#konten">Lewati ke konten utama</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Creativo, ke beranda">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span class="brand-name">Creativo</span>
+      </a>
+      <nav aria-label="Navigasi utama">
+        <ul class="nav-list">
+          <li><a href="index.html">Beranda</a></li>
+          <li><a href="karya.html" aria-current="page">Karya</a></li>
+          <li><a href="inspirasi.html">Inspirasi</a></li>
+          <li><a href="php/profesi.php">Profesi</a></li>
+          <li><a href="php/kreator.php">Kreator</a></li>
+          <li><a href="php/direktori.php">Direktori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Week 3: the page is static HTML; js/karya.js makes it interactive -->
+  <main id="konten" class="container">
+    <section class="page-head" aria-labelledby="judul-karya">
+      <h1 id="judul-karya">Karya terbaru</h1>
+      <p>Cari karya berdasarkan judul atau nama kreator, lalu saring per bidang.</p>
+    </section>
+
+    <section class="toolbar" aria-label="Pencarian dan filter karya">
+      <label for="cari-karya" class="sr-only">Cari karya</label>
+      <input id="cari-karya" class="input" type="search" placeholder="Cari judul atau nama kreator…" autocomplete="off">
+
+      <div class="chip-list" role="group" aria-label="Filter bidang">
+        <button type="button" class="chip" data-bidang="Semua" aria-pressed="true">Semua</button>
+        <button type="button" class="chip" data-bidang="Desain" aria-pressed="false">Desain</button>
+        <button type="button" class="chip" data-bidang="Fotografi" aria-pressed="false">Fotografi</button>
+        <button type="button" class="chip" data-bidang="Teknologi" aria-pressed="false">Teknologi</button>
+        <button type="button" class="chip" data-bidang="Video" aria-pressed="false">Video</button>
+      </div>
+
+      <p id="info-hasil" class="result-info" aria-live="polite">Memuat karya…</p>
+    </section>
+
+    <section aria-label="Daftar karya">
+      <div id="galeri" class="gallery"></div>
+    </section>
+
+    <section class="summary" aria-labelledby="judul-ringkasan">
+      <h2 id="judul-ringkasan" class="sr-only">Ringkasan per bidang</h2>
+      <button id="tombol-ringkasan" type="button" class="btn btn-primary" aria-expanded="false" aria-controls="ringkasan">
+        Lihat ringkasan per bidang
+      </button>
+      <div id="ringkasan" class="summary" hidden></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; <span id="tahun">2026</span> Creativo · Kelompok DevJamHub</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/karya.js"></script>
+</body>
+</html>

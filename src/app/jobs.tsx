@@ -94,7 +94,7 @@ export default function JobsScreen() {
     status === 'loading' ? (
       <LoadingState />
     ) : status === 'error' ? (
-      <ErrorState message={error?.message} onRetry={reload} />
+      <ErrorState kind={error?.kind} message={error?.message} onRetry={reload} />
     ) : (
       <EmptyState
         icon="briefcase-outline"

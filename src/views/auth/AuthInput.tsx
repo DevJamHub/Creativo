@@ -1,18 +1,22 @@
-// Styled text input for auth forms with label, error state, and password toggle.
+// Styled text input for auth forms: visible label, optional icon, error message, and a show/hide
+// toggle for passwords (hidden by default, so nobody reads it over your shoulder).
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
+import type { IconName } from '@/models/icon';
 import { colors, radius, spacing } from '@/theme';
 import { AppText } from '@/views/ui/AppText';
 
 interface AuthInputProps extends TextInputProps {
   label: string;
   error?: string;
+  /** Shown inside the field, before the text */
+  icon?: IconName;
 }
 
-export function AuthInput({ label, error, secureTextEntry, style, onFocus, onBlur, ...rest }: AuthInputProps) {
+export function AuthInput({ label, error, icon, secureTextEntry, style, onFocus, onBlur, ...rest }: AuthInputProps) {
   const [hidden, setHidden] = useState(secureTextEntry);
   const [focused, setFocused] = useState(false);
   const isPassword = secureTextEntry !== undefined;
@@ -23,6 +27,7 @@ export function AuthInput({ label, error, secureTextEntry, style, onFocus, onBlu
         {label}
       </AppText>
       <View style={[styles.inputRow, rest.multiline && styles.inputRowMultiline, focused && styles.inputFocused, error && styles.inputError]}>
+        {icon && <Ionicons name={icon} size={18} color={focused ? colors.primary : colors.textSubtle} />}
         <TextInput
           {...rest}
           secureTextEntry={hidden}

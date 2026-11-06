@@ -1,19 +1,21 @@
-// Storage on the device, in two kinds:
+// Data kept on the device, in two kinds (Week 3 · Secure the Local Data):
 //
-//   1. LOCAL STORAGE  (localStore)          — plain, fast, for non-sensitive app preferences.
+//   1. LOCAL STORAGE  (localStore)  ordinary data, not secret: preferences and UI settings
+//      (text size, last feed tab, which account turned on biometric login).
 //      AsyncStorage on Android/iOS, the browser's localStorage on web.
 //
-//   2. SECURE STORAGE (secureSessionStorage) — encrypted, for the login session (access + refresh tokens).
-//      The session is encrypted with AES-256; the key lives in expo-secure-store (iOS Keychain /
-//      Android Keystore) and only the unreadable ciphertext goes to AsyncStorage. SecureStore itself
-//      can reject values over ~2 KB, and a Supabase session is bigger, hence the split
-//      (Supabase's recommended "LargeSecureStore" pattern). SecureStore has no web version, so on web
-//      the session stays in localStorage.
+//   2. SECURE STORAGE (secureStore) sensitive data: the access token (JWT) from login and the
+//      biometric login token. expo-secure-store encrypts them with the iOS Keychain / Android Keystore:
+//        SecureStore.setItemAsync('access_token', token)   save (after login)
+//        SecureStore.getItemAsync('access_token')          read (on every API request)
+//        SecureStore.deleteItemAsync('access_token')       delete (logout)
+//      SecureStore doesn't exist on web; the web build keeps them in localStorage instead.
+//
+// Passwords are never stored on the device, in either kind.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import aesjs from 'aes-js';
-import { getRandomBytes } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 /* ------------------------------------------------------------------ */
 /*  1. LOCAL STORAGE — preferences (not secret)                        */
@@ -25,8 +27,12 @@ const PREFIX = 'creativo.';
 export const localKeys = {
   /** Last feed tab (Untukmu · Diikuti · Bidangku), so the feed reopens where you left it */
   feedView: 'feedView',
-  /** Which account turned on the fingerprint / Face ID app lock (a setting, not a secret) */
-  biometricLock: 'biometricLock',
+  /** Text size chosen in Pengaturan ('normal' | 'large') */
+  textSize: 'textSize',
+  /** Name and email of the account that turned on biometric login here, shown on the login screen */
+  biometricAccount: 'biometricAccount',
+  /** Accounts that were already asked whether to turn on biometric login */
+  biometricOffered: 'biometricOffered',
 } as const;
 
 export const localStore = {
@@ -55,90 +61,51 @@ export const localStore = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  2. SECURE STORAGE — the login session (secret)                     */
+/*  2. SECURE STORAGE — tokens (secret)                                */
 /* ------------------------------------------------------------------ */
 
-async function encrypt(key: string, value: string): Promise<string> {
-  // A fresh random 256-bit key on every save, kept in the Keychain / Keystore
-  const encryptionKey = getRandomBytes(32);
-  const cipher = new aesjs.ModeOfOperation.ctr(encryptionKey, new aesjs.Counter(1));
-  const encrypted = cipher.encrypt(aesjs.utils.utf8.toBytes(value));
-  await SecureStore.setItemAsync(key, aesjs.utils.hex.fromBytes(encryptionKey));
-  return aesjs.utils.hex.fromBytes(encrypted);
-}
+/** Keys of everything Creativo keeps in secure storage. */
+export const secureKeys = {
+  /** JWT from POST /auth/login, sent as "Authorization: Bearer <token>" */
+  accessToken: 'access_token',
+  /** Long random token from POST /auth/biometric, traded for an access token after a fingerprint / face scan */
+  biometricToken: 'biometric_token',
+} as const;
 
-const HEX = /^(?:[0-9a-f]{2})+$/i;
+const isWeb = Platform.OS === 'web';
+// Static web rendering runs in Node, where there is no localStorage
+const webStorage = () => (typeof window !== 'undefined' ? window.localStorage : null);
 
-const isJson = (text: string) => {
-  try {
-    JSON.parse(text);
-    return true;
-  } catch {
-    return false;
-  }
-};
+/** Where secure data actually lives on this platform, for labels and logs */
+export const secureStorageName = isWeb ? 'localStorage (web)' : 'SecureStore (terenkripsi)';
 
-/** The plain text, or null when the data isn't readable with this key. Never throws. */
-function decrypt(keyHex: string, value: string): string | null {
-  // Not our ciphertext at all, e.g. written by another version of the app
-  if (keyHex.length !== 64 || !HEX.test(keyHex) || !HEX.test(value)) return null;
-  try {
-    const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(keyHex), new aesjs.Counter(1));
-    const text = aesjs.utils.utf8.fromBytes(cipher.decrypt(aesjs.utils.hex.toBytes(value)));
-    // Supabase only saves JSON; the wrong key decrypts to garbage instead
-    return isJson(text) ? text : null;
-  } catch {
-    return null;
-  }
-}
-
-async function write(key: string, value: string): Promise<void> {
-  await AsyncStorage.setItem(key, await encrypt(key, value));
-}
-
-async function clear(key: string): Promise<void> {
-  await AsyncStorage.removeItem(key);
-  await SecureStore.deleteItemAsync(key);
-}
-
-// Supabase can save (e.g. after a token refresh) while it is still reading. Each operation on a key
-// waits for the one before it, so a read never sees a new key with old ciphertext and two saves can't cross.
-const queues = new Map<string, Promise<unknown>>();
-
-function serialized<T>(key: string, task: () => Promise<T>): Promise<T> {
-  const run = (queues.get(key) ?? Promise.resolve()).then(task, task);
-  queues.set(key, run.catch(() => {}));
-  return run;
-}
-
-/** Storage adapter for the Supabase client on Android/iOS (getItem / setItem / removeItem). */
-export const secureSessionStorage = {
-  getItem(key: string): Promise<string | null> {
-    return serialized(key, async () => {
-      const stored = await AsyncStorage.getItem(key);
-      if (!stored) return null;
-
-      const keyHex = await SecureStore.getItemAsync(key);
-      const text = keyHex ? decrypt(keyHex, stored) : null;
-      if (text !== null) return text;
-
-      // Saved in plain text by an older version of the app: encrypt it now, so nobody gets signed out
-      if ((stored.startsWith('{') || stored.startsWith('"')) && isJson(stored)) {
-        await write(key, stored);
-        return stored;
-      }
-
-      // Unreadable (ciphertext without its key, or data left by another app version): remove it.
-      // Supabase then sees no session and asks the user to sign in, instead of failing on every read.
-      if (__DEV__) console.warn('[storage] unreadable session data removed:', key);
-      await clear(key);
+export const secureStore = {
+  /** The stored value, or null when there is none or it can't be read. */
+  async get(key: string): Promise<string | null> {
+    try {
+      return isWeb ? (webStorage()?.getItem(key) ?? null) : await SecureStore.getItemAsync(key);
+    } catch (err) {
+      if (__DEV__) console.warn('[storage] secure read failed', err);
       return null;
-    });
+    }
   },
-  setItem(key: string, value: string): Promise<void> {
-    return serialized(key, () => write(key, value));
+  /** True once the value is saved. */
+  async set(key: string, value: string): Promise<boolean> {
+    try {
+      if (isWeb) webStorage()?.setItem(key, value);
+      else await SecureStore.setItemAsync(key, value);
+      return true;
+    } catch (err) {
+      if (__DEV__) console.warn('[storage] secure save failed', err);
+      return false;
+    }
   },
-  removeItem(key: string): Promise<void> {
-    return serialized(key, () => clear(key));
+  async remove(key: string): Promise<void> {
+    try {
+      if (isWeb) webStorage()?.removeItem(key);
+      else await SecureStore.deleteItemAsync(key);
+    } catch (err) {
+      if (__DEV__) console.warn('[storage] secure delete failed', err);
+    }
   },
 };

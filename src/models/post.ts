@@ -1,5 +1,5 @@
 // Post model: work a professional shares to the feed (Instagram-style: photos + caption, likes, comments).
-// Mirrors public.posts / post_likes / post_comments in supabase/migrations; limits match their checks.
+// Matches the Creativo API (GET /posts, /posts/:id/comments); limits match the server's checks.
 
 export const MAX_POST_IMAGES = 10;
 export const CAPTION_MAX = 2200;
@@ -11,13 +11,13 @@ export type PostKind = 'post' | 'karya';
 export interface Post {
   id: string;
   author_id: string;
-  /** Paths inside the "posts" storage bucket; the first one is the cover */
+  /** Photo addresses: "/uploads/<file>" for uploads, web addresses for the demo posts; the first one is the cover */
   image_paths: string[];
   caption: string;
   kind: PostKind;
   created_at: string;
   updated_at: string;
-  /** Counted by the database when the feed loads, then kept up to date locally */
+  /** Counted by the server when the feed loads, then kept up to date locally */
   like_count: number;
   comment_count: number;
 }

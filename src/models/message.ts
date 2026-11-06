@@ -1,10 +1,12 @@
 // Message model: direct messages between two people (the "Pesan" section of Teman).
-// Mirrors public.messages and public.my_conversations() in supabase/migrations.
+// Matches the Creativo API (GET /conversations, /messages/:otherId).
 
 export const MESSAGE_MAX = 2000;
 
 export interface Message {
   id: string;
+  /** Order in which the server received it; used to ask for newer messages */
+  seq: number;
   sender_id: string;
   recipient_id: string;
   body: string;

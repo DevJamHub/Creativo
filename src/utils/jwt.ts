@@ -1,10 +1,10 @@
 // JSON Web Token (JWT) helpers: a JWT is "header.payload.signature", each part base64url-encoded.
-// Supabase hands out a JWT as the access token on login. These helpers only READ a token (to show
-// who it belongs to and when it expires); checking the signature needs the server's secret key,
-// so that is always done by Supabase, never by the app.
+// The Creativo API hands out a JWT as the access token on login. These helpers only READ a token
+// (who it belongs to, when it expires); checking the signature needs the server's secret key,
+// so that is always done by the server, never by the app.
 
 export interface JwtHeader {
-  /** Signing algorithm, e.g. HS256 or ES256 */
+  /** Signing algorithm: HS256 for the Creativo API */
   alg?: string;
   typ?: string;
 }
@@ -12,13 +12,15 @@ export interface JwtHeader {
 export interface JwtClaims {
   /** Subject: the user's id */
   sub?: string;
-  /** Postgres role the request runs as: 'authenticated' for a signed-in user */
-  role?: string;
+  name?: string;
   email?: string;
+  /** What the token may do: 'user' for a signed-in account */
+  role?: string;
   /** Issued at / expires at, in seconds since 1970 */
   iat?: number;
   exp?: number;
-  session_id?: string;
+  /** Token id; the server remembers it after logout so the token can't be used again */
+  jti?: string;
 }
 
 export interface Jwt {
@@ -55,6 +57,14 @@ export function decodeJwt(token: string): Jwt | null {
 /** Seconds until the token expires (negative once expired), or null if it has no exp claim. */
 export function secondsLeft(claims: JwtClaims, now = Date.now()): number | null {
   return typeof claims.exp === 'number' ? Math.floor(claims.exp - now / 1000) : null;
+}
+
+/** True for a readable JWT that has not expired yet. The server still has the final word. */
+export function isUsableToken(token: string | null, now = Date.now()): token is string {
+  if (!token) return false;
+  const jwt = decodeJwt(token);
+  const left = jwt ? secondsLeft(jwt.payload, now) : null;
+  return !!jwt?.payload.sub && left !== null && left > 0;
 }
 
 /**

@@ -3,7 +3,7 @@
     "name": "Creativo",
     "slug": "CREATIVO",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "creativo",
     "userInterfaceStyle": "light",
@@ -45,7 +45,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Creativo memakai Face ID untuk membuka aplikasi saat kunci biometrik aktif."
+          "faceIDPermission": "Creativo memakai Face ID agar kamu bisa masuk tanpa mengetik kata sandi."
         }
       ]
     ],

@@ -1,4 +1,4 @@
-// One conversation: load it, receive new messages live, send, and mark what you've seen as read.
+// One conversation: load it, pick up new messages (checked every few seconds), send, and mark what you've seen as read.
 
 import { useCallback, useEffect, useState } from 'react';
 
@@ -6,6 +6,8 @@ import { useAuthContext } from '@/controllers/AuthProvider';
 import { useMessages } from '@/controllers/MessagesProvider';
 import type { Message } from '@/models/message';
 import * as messages from '@/services/messages.service';
+
+const CHAT_POLL_MS = 3_000;
 
 export function useChat(otherId: string | undefined) {
   const { user } = useAuthContext();
@@ -21,20 +23,20 @@ export function useChat(otherId: string | undefined) {
     if (!me || !otherId) return;
     let active = true;
 
-    messages.fetchThread(me, otherId).then((result) => {
+    messages.fetchThread(otherId).then((result) => {
       if (!active) return;
       setThread(result.data ?? []);
       setError(result.error);
       setLoadedFor(otherId);
     });
-    messages.markThreadRead(me, otherId).then(() => markRead(otherId));
+    messages.markThreadRead(otherId).then(() => markRead(otherId));
 
-    // Live: only messages from the person this chat is with
-    const unsubscribe = messages.subscribeToIncoming(me, `chat:${me}:${otherId}`, (message) => {
+    // Only messages from the person this chat is with
+    const unsubscribe = messages.subscribeToIncoming((message) => {
       if (!active || message.sender_id !== otherId) return;
       setThread((cur) => (cur.some((m) => m.id === message.id) ? cur : [...cur, message]));
-      messages.markThreadRead(me, otherId).then(() => markRead(otherId));
-    });
+      messages.markThreadRead(otherId).then(() => markRead(otherId));
+    }, CHAT_POLL_MS);
 
     return () => {
       active = false;
@@ -46,7 +48,7 @@ export function useChat(otherId: string | undefined) {
     async (body: string) => {
       if (!me || !otherId || !body.trim() || sending) return false;
       setSending(true);
-      const result = await messages.sendMessage(me, otherId, body);
+      const result = await messages.sendMessage(otherId, body);
       setSending(false);
       if (result.error !== null) {
         setError(result.error);

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Creativo: tempat profesional memamerkan karya, dan recruiter menemukan kandidat lewat karya nyata.">
+  <title>Creativo · Pamerkan Karya, Temukan Peluang</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#konten">Lewati ke konten utama</a>
+
+  <!-- Week 2 · Task 01: semantic structure (header, nav, main, section, article, footer) -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Creativo, ke beranda">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span class="brand-name">Creativo</span>
+      </a>
+      <nav aria-label="Navigasi utama">
+        <ul class="nav-list">
+          <li><a href="index.html" aria-current="page">Beranda</a></li>
+          <li><a href="karya.html">Karya</a></li>
+          <li><a href="inspirasi.html">Inspirasi</a></li>
+          <li><a href="php/profesi.php">Profesi</a></li>
+          <li><a href="php/kreator.php">Kreator</a></li>
+          <li><a href="php/direktori.php">Direktori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="konten">
+    <section class="hero" aria-labelledby="judul-hero">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <p class="eyebrow">Media sosial + LinkedIn untuk para profesional</p>
+          <h1 id="judul-hero">Pamerkan karyamu. Temukan peluang lewat karya nyata.</h1>
+          <p class="lead">
+            Creativo mempertemukan engineer, desainer, fotografer, dan kreator dengan recruiter
+            serta klien yang menilai kandidat dari hasil kerjanya, bukan hanya dari CV.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="karya.html">Jelajahi karya</a>
+            <a class="btn btn-ghost" href="php/direktori.php">Cari profesional</a>
+          </div>
+        </div>
+        <figure class="hero-card" aria-label="Contoh kartu profil Creativo">
+          <div class="hero-card-banner" aria-hidden="true"></div>
+          <div class="hero-card-body">
+            <span class="avatar" aria-hidden="true">RA</span>
+            <p class="hero-card-name">Rani Ayu</p>
+            <p class="hero-card-role">UI/UX Designer · Malang</p>
+            <p class="badge badge-success">Terbuka untuk peluang</p>
+          </div>
+          <figcaption class="sr-only">Kartu profil kreator dengan status terbuka untuk peluang</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="fitur" aria-labelledby="judul-fitur">
+      <div class="container">
+        <h2 id="judul-fitur">Apa yang bisa dilakukan di Creativo?</h2>
+        <div class="grid grid-3">
+          <article class="card">
+            <h3>Feed karya</h3>
+            <p>Unggah foto dan cerita proyekmu. Orang lain bisa menyukai, berkomentar, dan membagikannya.</p>
+          </article>
+          <article class="card">
+            <h3>Profil bergaya LinkedIn</h3>
+            <p>Banner, headline, bidang keahlian, dan status <strong>Terbuka untuk peluang</strong> dalam satu halaman.</p>
+          </article>
+          <article class="card">
+            <h3>Cari profesional</h3>
+            <p>Recruiter dan klien menyaring kandidat berdasarkan bidang dan status siap direkrut.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="profesi" aria-labelledby="judul-profesi">
+      <div class="container">
+        <h2 id="judul-profesi">Untuk berbagai profesi</h2>
+        <ul class="chip-list" aria-label="Daftar profesi">
+          <li class="chip">Software Engineer</li>
+          <li class="chip">UI/UX Designer</li>
+          <li class="chip">Fotografer</li>
+          <li class="chip">Videografer</li>
+          <li class="chip">Ilustrator</li>
+          <li class="chip">Content Creator</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="cara-kerja" aria-labelledby="judul-cara-kerja">
+      <div class="container">
+        <h2 id="judul-cara-kerja">Cara kerjanya</h2>
+        <ol class="steps">
+          <li><strong>Daftar</strong> dan pilih profesimu.</li>
+          <li><strong>Unggah karya</strong> terbaikmu ke feed.</li>
+          <li><strong>Terhubung</strong> dengan recruiter, klien, dan sesama kreator.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; <span id="tahun">2026</span> Creativo · Kelompok DevJamHub</p>
+      <p>Aplikasi mobile: Expo / React Native · Versi web: HTML, CSS, JavaScript, PHP</p>
+    </div>
+  </footer>
+</body>
+</html>
